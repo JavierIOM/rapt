@@ -33,14 +33,10 @@ function applyTheme() {
 
     // Update button states
     const darkToggle = document.getElementById('darkModeToggle');
-    const monoToggle = document.getElementById('monochromeToggle');
     const coldCrashToggle = document.getElementById('coldCrashToggle');
 
     if (darkToggle) {
         darkToggle.classList.toggle('active', darkMode);
-    }
-    if (monoToggle) {
-        monoToggle.classList.toggle('active', monochromeMode);
     }
     if (coldCrashToggle) {
         coldCrashToggle.classList.toggle('active', coldCrashMode);
@@ -545,7 +541,6 @@ document.getElementById('refreshBtn').addEventListener('click', loadData);
 // Theme toggle handlers
 document.getElementById('coldCrashToggle').addEventListener('click', toggleColdCrashMode);
 document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
-document.getElementById('monochromeToggle').addEventListener('click', toggleMonochromeMode);
 
 // Load data on page load
 loadData();

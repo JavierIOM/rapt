@@ -509,35 +509,31 @@ function displayDevices(hydrometers) {
                 </div>
                 <div class="text-right">
                     <div class="text-slate-500 font-mono text-sm">ID: ${device.id}</div>
-                    ${latestData ? `<div class="text-slate-400 text-xs mt-1">Battery: ${latestData.battery?.toFixed(0) || 'N/A'}% | Signal: ${latestData.rssi || 'N/A'} dBm</div>` : ''}
+                    ${latestData ? `<div class="text-slate-400 text-xs mt-1">Battery: ${latestData.battery?.toFixed(0) || 'N/A'}% | Signal: ${latestData.rssi || 'N/A'} dBm | ${formatTime(device.lastActivityTime)}</div>` : ''}
                 </div>
             </div>
 
             ${latestData ? `
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
                     <div class="${tempClass}">
-                        <div class="info-card-label mb-2">Temperature</div>
-                        <div class="info-card-value">${latestData.temperature?.toFixed(1) || 'N/A'}°C</div>
+                        <div class="info-card-label mb-1 text-xs">Temperature</div>
+                        <div class="info-card-value text-2xl">${latestData.temperature?.toFixed(1) || 'N/A'}°C</div>
                     </div>
                     <div class="info-card">
-                        <div class="info-card-label mb-2">ABV</div>
-                        <div class="info-card-value">${latestData.abv?.toFixed(2) || 'N/A'}%</div>
+                        <div class="info-card-label mb-1 text-xs">ABV</div>
+                        <div class="info-card-value text-2xl">${latestData.abv?.toFixed(2) || 'N/A'}%</div>
                     </div>
                     <div class="info-card">
-                        <div class="info-card-label mb-2">Gravity</div>
-                        <div class="info-card-value text-2xl">${latestData.gravity?.toFixed(3) || 'N/A'}</div>
+                        <div class="info-card-label mb-1 text-xs">Gravity</div>
+                        <div class="info-card-value text-xl">${latestData.gravity?.toFixed(3) || 'N/A'}</div>
                     </div>
                     <div class="info-card">
-                        <div class="info-card-label mb-2">Gravity Velocity</div>
-                        <div class="info-card-value text-xl">${latestData.gravityVelocity?.toFixed(2) || 'N/A'}<span class="text-lg"> ppd</span></div>
+                        <div class="info-card-label mb-1 text-xs">Gravity Velocity</div>
+                        <div class="info-card-value text-lg">${latestData.gravityVelocity?.toFixed(2) || 'N/A'}<span class="text-sm"> ppd</span></div>
                     </div>
                     <div class="info-card">
-                        <div class="info-card-label mb-2">Attenuation</div>
-                        <div class="info-card-value">${latestData.attenuation?.toFixed(1) || 'N/A'}%</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-card-label mb-2">Last Activity</div>
-                        <div class="info-card-value text-xl">${formatTime(device.lastActivityTime)}</div>
+                        <div class="info-card-label mb-1 text-xs">Attenuation</div>
+                        <div class="info-card-value text-2xl">${latestData.attenuation?.toFixed(1) || 'N/A'}%</div>
                     </div>
                 </div>
 

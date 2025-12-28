@@ -42,6 +42,23 @@
             <div class="modal-body">
                 <p class="text-sm text-gray-600 mb-6">Configure temperature ranges for warnings and alerts (°C)</p>
 
+                <!-- Cold Crash Info -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v4m0 12v4m8-10h-4M8 12H4m13.657-5.657l-2.828 2.828M9.172 14.828l-2.829 2.829m0-11.314l2.829 2.829m5.656 5.656l2.829 2.829"></path>
+                        </svg>
+                        <div>
+                            <h3 class="font-semibold text-blue-900 mb-1">Cold Crash Mode</h3>
+                            <p class="text-sm text-blue-800">
+                                The <strong>Cold Crash</strong> button (snowflake icon, top-right) is used when intentionally dropping fermentation temperature to clarify your beer.
+                                When enabled, it ignores low temperature warnings below the minimum safe temperature, preventing false alarms during cold crashing.
+                                High temperature warnings still apply for safety.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="setting-group">
                     <label for="tempDangerMin">
                         <span class="setting-label">Minimum Safe Temperature (Red Below)</span>

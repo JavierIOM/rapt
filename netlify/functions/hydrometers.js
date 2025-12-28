@@ -220,12 +220,26 @@ async function fetchHydrometers() {
                 }
 
                 device.telemetry = telemetry.map(t => {
+                    // Convert gravity values - RAPT appears to use format like 1063.4 for SG 1.0634
                     const ogSG = og / 1000;
                     const fgSG = t.gravity / 1000;
+
+                    // Calculate ABV using standard formula
                     const abv = (ogSG - fgSG) * 131.25;
+
+                    // Calculate attenuation: ((OG - FG) / (OG - 1.000)) × 100
+                    // This shows how much of the available sugars have been consumed
+                    const attenuation = ((ogSG - fgSG) / (ogSG - 1.0)) * 100;
+
+                    // Log first reading for verification
+                    if (device.telemetry.indexOf(t) === 0) {
+                        console.log(`   Sample calculation: OG=${ogSG.toFixed(4)}, FG=${fgSG.toFixed(4)}, ABV=${abv.toFixed(2)}%, Attenuation=${attenuation.toFixed(1)}%`);
+                    }
+
                     return {
                         ...t,
-                        abv: parseFloat(Math.max(0, abv).toFixed(2))
+                        abv: parseFloat(Math.max(0, abv).toFixed(2)),
+                        attenuation: parseFloat(Math.max(0, Math.min(100, attenuation)).toFixed(1))
                     };
                 });
             }

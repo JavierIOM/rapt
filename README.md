@@ -108,6 +108,37 @@ TEMP_WARNING_MAX=13
 TEMP_DANGER_MAX=15
 ```
 
+### Calculation Formulas
+
+The dashboard automatically calculates ABV and attenuation from gravity readings:
+
+**ABV (Alcohol by Volume):**
+```
+ABV = (OG - FG) × 131.25
+```
+Where OG = Original Gravity, FG = Final/Current Gravity
+
+This is the standard formula used in brewing. Example:
+- OG: 1.0634 (63.4 points)
+- FG: 1.0100 (10 points)
+- ABV: (1.0634 - 1.0100) × 131.25 = 7.01%
+
+**Attenuation (Apparent Attenuation):**
+```
+Attenuation = ((OG - FG) / (OG - 1.000)) × 100
+```
+
+This shows what percentage of available sugars have been consumed. Example:
+- OG: 1.0634, FG: 1.0100
+- Attenuation: ((1.0634 - 1.0100) / (1.0634 - 1.000)) × 100 = 84.2%
+
+**Data Sources:**
+- Original Gravity (OG) is obtained from:
+  1. Profile session data (if available)
+  2. Manual OG setting (`RAPT_MANUAL_OG` environment variable)
+  3. First telemetry reading (fallback)
+- Current/Final Gravity comes from each telemetry reading
+
 ## Technology Stack
 
 - **Frontend**: Vanilla JavaScript, Vite

@@ -31,12 +31,17 @@ function applyTheme() {
         body.classList.remove('monochrome-mode');
     }
 
-    // Update button states
+    // Update button states and text
     const darkToggle = document.getElementById('darkModeToggle');
     const coldCrashToggle = document.getElementById('coldCrashToggle');
 
     if (darkToggle) {
         darkToggle.classList.toggle('active', darkMode);
+        // Update button text based on current mode
+        const buttonText = darkToggle.querySelector('svg').nextSibling;
+        if (buttonText && buttonText.nodeType === Node.TEXT_NODE) {
+            buttonText.textContent = darkMode ? '\n            Light Mode\n        ' : '\n            Dark Mode\n        ';
+        }
     }
     if (coldCrashToggle) {
         coldCrashToggle.classList.toggle('active', coldCrashMode);

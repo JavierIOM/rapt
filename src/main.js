@@ -231,16 +231,8 @@ function createChart(deviceId, telemetryData, timeRange = 24) {
                 {
                     label: 'Temperature (°C)',
                     data: temperatures,
-                    borderColor: function(context) {
-                        const index = context.dataIndex;
-                        return tempColors[index];
-                    },
-                    segment: {
-                        borderColor: function(context) {
-                            return tempColors[context.p0DataIndex];
-                        }
-                    },
-                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    borderColor: monochromeMode ? (darkMode ? 'rgb(163, 163, 163)' : 'rgb(115, 115, 115)') : 'rgb(34, 197, 94)',
+                    backgroundColor: monochromeMode ? (darkMode ? 'rgba(163, 163, 163, 0.1)' : 'rgba(115, 115, 115, 0.1)') : 'rgba(34, 197, 94, 0.1)',
                     yAxisID: 'y',
                     tension: 0.4,
                     pointBackgroundColor: tempColors,

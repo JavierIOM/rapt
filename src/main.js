@@ -216,6 +216,7 @@ function createChart(deviceId, telemetryData, timeRange = 24) {
     const temperatures = sortedData.map(d => d.temperature);
     const abv = sortedData.map(d => d.abv);
     const attenuation = sortedData.map(d => d.attenuation);
+    const gravityVelocity = sortedData.map(d => d.gravityVelocity || 0);
 
     // Create dynamic colors for attenuation based on completion (pink -> purple)
     const attenuationColors = sortedData.map(d => {
@@ -307,6 +308,16 @@ function createChart(deviceId, telemetryData, timeRange = 24) {
                     pointBorderColor: attenuationColors,
                     pointRadius: 4,
                     borderWidth: 3
+                },
+                {
+                    label: 'Gravity Velocity (ppd)',
+                    data: gravityVelocity,
+                    borderColor: monochromeMode ? (darkMode ? 'rgb(212, 212, 212)' : 'rgb(82, 82, 82)') : 'rgb(234, 179, 8)',
+                    backgroundColor: monochromeMode ? (darkMode ? 'rgba(212, 212, 212, 0.1)' : 'rgba(82, 82, 82, 0.1)') : 'rgba(234, 179, 8, 0.1)',
+                    yAxisID: 'y3',
+                    tension: 0.4,
+                    pointRadius: 3,
+                    borderWidth: 2
                 }
             ]
         },
@@ -378,6 +389,23 @@ function createChart(deviceId, telemetryData, timeRange = 24) {
                     title: {
                         display: true,
                         text: 'Attenuation (%)',
+                        font: {
+                            size: 14,
+                            weight: '600'
+                        }
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                    offset: true
+                },
+                y3: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Gravity Velocity (ppd)',
                         font: {
                             size: 14,
                             weight: '600'
@@ -470,14 +498,20 @@ function displayDevices(hydrometers) {
             ${batteryWarning}
             ${tempWarning}
             <div class="flex justify-between items-center mb-6 pb-6 border-b-2 border-slate-100">
-                <h2 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                    ${displayName}
-                </h2>
+                <div>
+                    <h2 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                        ${displayName}
+                    </h2>
+                    <div class="text-slate-500 text-sm mt-1">
+                        Firmware: ${device.firmwareVersion || 'Unknown'}
+                        ${device.isLatestFirmware === false ? '<span class="text-orange-500">⚠️ Update Available</span>' : ''}
+                    </div>
+                </div>
                 <div class="text-slate-500 font-mono text-sm">ID: ${device.id}</div>
             </div>
 
             ${latestData ? `
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
                     <div class="${tempClass}">
                         <div class="info-card-label mb-2">Temperature</div>
                         <div class="info-card-value">${latestData.temperature?.toFixed(1) || 'N/A'}°C</div>
@@ -491,12 +525,28 @@ function displayDevices(hydrometers) {
                         <div class="info-card-value text-2xl">${latestData.gravity?.toFixed(3) || 'N/A'}</div>
                     </div>
                     <div class="info-card">
+                        <div class="info-card-label mb-2">Gravity Velocity</div>
+                        <div class="info-card-value text-xl">${latestData.gravityVelocity?.toFixed(2) || 'N/A'}<span class="text-lg"> ppd</span></div>
+                    </div>
+                    <div class="info-card">
                         <div class="info-card-label mb-2">Attenuation</div>
                         <div class="info-card-value">${latestData.attenuation?.toFixed(1) || 'N/A'}%</div>
                     </div>
+                    <div class="info-card">
+                        <div class="info-card-label mb-2">Battery</div>
+                        <div class="info-card-value">${latestData.battery?.toFixed(0) || 'N/A'}%</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card-label mb-2">Signal (RSSI)</div>
+                        <div class="info-card-value text-xl">${latestData.rssi || 'N/A'}<span class="text-lg"> dBm</span></div>
+                    </div>
+                    <div class="info-card col-span-2 md:col-span-1">
+                        <div class="info-card-label mb-2">Last Reading</div>
+                        <div class="info-card-value text-xl">${formatTime(latestData.createdOn)}</div>
+                    </div>
                     <div class="info-card col-span-2 md:col-span-1">
                         <div class="info-card-label mb-2">Last Activity</div>
-                        <div class="info-card-value text-xl">${formatTime(latestData.createdOn)}</div>
+                        <div class="info-card-value text-xl">${formatTime(device.lastActivityTime)}</div>
                     </div>
                 </div>
 

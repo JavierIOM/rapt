@@ -538,7 +538,7 @@ function displayDevices(hydrometers) {
                 </div>
 
                 <div class="mb-4">
-                    <label for="timeRange-${device.id}" class="block text-sm font-medium text-slate-700 mb-2">Time Range:</label>
+                    <label for="timeRange-${device.id}" class="block text-sm font-medium time-range-label mb-2">Time Range:</label>
                     <select id="timeRange-${device.id}" class="w-full md:w-64 px-4 py-2 border-2 border-slate-300 rounded-lg focus:outline-none focus:border-purple-500 bg-white font-medium">
                         <option value="6">Last 6 Hours</option>
                         <option value="12">Last 12 Hours</option>

@@ -457,6 +457,15 @@ body.dark-mode .button-secondary:hover {
   background: rgb(71, 85, 105);
 }
 
+/* Time Range Label */
+.time-range-label {
+  color: rgb(51, 65, 85);
+}
+
+body.dark-mode .time-range-label {
+  color: rgb(203, 213, 225);
+}
+
 /* Cold Crash Info Box */
 .bg-blue-50 {
   background-color: rgb(239, 246, 255);

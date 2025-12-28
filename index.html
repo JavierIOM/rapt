@@ -11,6 +11,13 @@
 
     <!-- Theme Controls - Top Right -->
     <div class="theme-controls-top-right">
+        <button id="settingsToggle" class="theme-toggle">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            Settings
+        </button>
         <button id="coldCrashToggle" class="theme-toggle">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v4m0 12v4m8-10h-4M8 12H4m13.657-5.657l-2.828 2.828M9.172 14.828l-2.829 2.829m0-11.314l2.829 2.829m5.656 5.656l2.829 2.829"></path>
@@ -23,6 +30,56 @@
             </svg>
             Dark Mode
         </button>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="text-2xl font-bold">Temperature Settings</h2>
+                <button id="closeModal" class="close-button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="text-sm text-gray-600 mb-6">Configure temperature ranges for warnings and alerts (°C)</p>
+
+                <div class="setting-group">
+                    <label for="tempDangerMin">
+                        <span class="setting-label">Minimum Safe Temperature (Red Below)</span>
+                        <span class="setting-description">Temperatures below this will show as danger (red)</span>
+                    </label>
+                    <input type="number" id="tempDangerMin" step="0.1" class="setting-input" placeholder="18">
+                </div>
+
+                <div class="setting-group">
+                    <label for="tempWarningMin">
+                        <span class="setting-label">Lower Optimal Temperature (Green Starts)</span>
+                        <span class="setting-description">Optimal range starts here (between min and this = orange warning)</span>
+                    </label>
+                    <input type="number" id="tempWarningMin" step="0.1" class="setting-input" placeholder="20">
+                </div>
+
+                <div class="setting-group">
+                    <label for="tempWarningMax">
+                        <span class="setting-label">Upper Optimal Temperature (Green Ends)</span>
+                        <span class="setting-description">Optimal range ends here (between this and max = orange warning)</span>
+                    </label>
+                    <input type="number" id="tempWarningMax" step="0.1" class="setting-input" placeholder="26">
+                </div>
+
+                <div class="setting-group">
+                    <label for="tempDangerMax">
+                        <span class="setting-label">Maximum Safe Temperature (Red Above)</span>
+                        <span class="setting-description">Temperatures above this will show as danger (red)</span>
+                    </label>
+                    <input type="number" id="tempDangerMax" step="0.1" class="setting-input" placeholder="28">
+                </div>
+
+                <div class="modal-footer">
+                    <button id="resetSettings" class="button-secondary">Reset to Defaults</button>
+                    <button id="saveSettings" class="button-primary">Save Settings</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="container mx-auto px-4 py-8 max-w-7xl relative z-10">

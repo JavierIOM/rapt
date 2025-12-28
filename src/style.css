@@ -271,3 +271,188 @@ body.monochrome-mode .alert-danger {
     opacity: 0;
   }
 }
+
+/* Settings Modal */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+.modal.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 1rem;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.3s ease-out;
+}
+
+body.dark-mode .modal-content {
+  background: rgb(30, 41, 59);
+  color: rgb(248, 250, 252);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid rgb(226, 232, 240);
+}
+
+body.dark-mode .modal-header {
+  border-bottom-color: rgb(71, 85, 105);
+}
+
+.close-button {
+  font-size: 2rem;
+  line-height: 1;
+  color: rgb(148, 163, 184);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close-button:hover {
+  color: rgb(71, 85, 105);
+}
+
+body.dark-mode .close-button:hover {
+  color: rgb(203, 213, 225);
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.setting-group {
+  margin-bottom: 1.5rem;
+}
+
+.setting-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.setting-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: rgb(30, 41, 59);
+  margin-bottom: 0.25rem;
+}
+
+body.dark-mode .setting-label {
+  color: rgb(248, 250, 252);
+}
+
+.setting-description {
+  display: block;
+  font-size: 0.875rem;
+  color: rgb(100, 116, 139);
+  margin-bottom: 0.5rem;
+}
+
+body.dark-mode .setting-description {
+  color: rgb(148, 163, 184);
+}
+
+.setting-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid rgb(226, 232, 240);
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.setting-input:focus {
+  outline: none;
+  border-color: rgb(167, 139, 250);
+}
+
+body.dark-mode .setting-input {
+  background: rgb(51, 65, 85);
+  border-color: rgb(71, 85, 105);
+  color: rgb(248, 250, 252);
+}
+
+.modal-footer {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgb(226, 232, 240);
+}
+
+body.dark-mode .modal-footer {
+  border-top-color: rgb(71, 85, 105);
+}
+
+.button-primary {
+  background: linear-gradient(to right, rgb(147, 51, 234), rgb(79, 70, 229));
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.button-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(147, 51, 234, 0.4);
+}
+
+.button-secondary {
+  background: rgb(226, 232, 240);
+  color: rgb(30, 41, 59);
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.button-secondary:hover {
+  background: rgb(203, 213, 225);
+}
+
+body.dark-mode .button-secondary {
+  background: rgb(51, 65, 85);
+  color: rgb(248, 250, 252);
+}
+
+body.dark-mode .button-secondary:hover {
+  background: rgb(71, 85, 105);
+}

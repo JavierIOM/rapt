@@ -3,13 +3,21 @@ import Chart from 'chart.js/auto'
 
 let charts = {};
 
-// Temperature limits (will be loaded from API config)
-let tempConfig = {
-    tempDangerMin: 18,
-    tempWarningMin: 20,
-    tempWarningMax: 26,
-    tempDangerMax: 28
-};
+// Temperature limits (will be loaded from localStorage or API config)
+function loadTempConfig() {
+    const saved = localStorage.getItem('tempConfig');
+    if (saved) {
+        return JSON.parse(saved);
+    }
+    return {
+        tempDangerMin: 18,
+        tempWarningMin: 20,
+        tempWarningMax: 26,
+        tempDangerMax: 28
+    };
+}
+
+let tempConfig = loadTempConfig();
 
 // Theme management
 let darkMode = localStorage.getItem('darkMode') === 'true';
@@ -546,6 +554,68 @@ document.getElementById('refreshBtn').addEventListener('click', loadData);
 // Theme toggle handlers
 document.getElementById('coldCrashToggle').addEventListener('click', toggleColdCrashMode);
 document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
+
+// Settings modal handlers
+const modal = document.getElementById('settingsModal');
+const settingsBtn = document.getElementById('settingsToggle');
+const closeBtn = document.getElementById('closeModal');
+const saveBtn = document.getElementById('saveSettings');
+const resetBtn = document.getElementById('resetSettings');
+
+function openSettings() {
+    // Load current values into inputs
+    document.getElementById('tempDangerMin').value = tempConfig.tempDangerMin;
+    document.getElementById('tempWarningMin').value = tempConfig.tempWarningMin;
+    document.getElementById('tempWarningMax').value = tempConfig.tempWarningMax;
+    document.getElementById('tempDangerMax').value = tempConfig.tempDangerMax;
+
+    modal.classList.add('active');
+}
+
+function closeSettings() {
+    modal.classList.remove('active');
+}
+
+function saveSettings() {
+    const newConfig = {
+        tempDangerMin: parseFloat(document.getElementById('tempDangerMin').value) || 18,
+        tempWarningMin: parseFloat(document.getElementById('tempWarningMin').value) || 20,
+        tempWarningMax: parseFloat(document.getElementById('tempWarningMax').value) || 26,
+        tempDangerMax: parseFloat(document.getElementById('tempDangerMax').value) || 28
+    };
+
+    tempConfig = newConfig;
+    localStorage.setItem('tempConfig', JSON.stringify(newConfig));
+
+    closeSettings();
+    loadData(); // Reload to apply new settings
+}
+
+function resetSettings() {
+    const defaults = {
+        tempDangerMin: 18,
+        tempWarningMin: 20,
+        tempWarningMax: 26,
+        tempDangerMax: 28
+    };
+
+    document.getElementById('tempDangerMin').value = defaults.tempDangerMin;
+    document.getElementById('tempWarningMin').value = defaults.tempWarningMin;
+    document.getElementById('tempWarningMax').value = defaults.tempWarningMax;
+    document.getElementById('tempDangerMax').value = defaults.tempDangerMax;
+}
+
+settingsBtn.addEventListener('click', openSettings);
+closeBtn.addEventListener('click', closeSettings);
+saveBtn.addEventListener('click', saveSettings);
+resetBtn.addEventListener('click', resetSettings);
+
+// Close modal when clicking outside
+modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+        closeSettings();
+    }
+});
 
 // Load data on page load
 loadData();

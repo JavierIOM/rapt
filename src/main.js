@@ -3,6 +3,14 @@ import Chart from 'chart.js/auto'
 
 let charts = {};
 
+// Temperature limits (will be loaded from API config)
+let tempConfig = {
+    tempDangerMin: 18,
+    tempWarningMin: 20,
+    tempWarningMax: 26,
+    tempDangerMax: 28
+};
+
 // Theme management
 let darkMode = localStorage.getItem('darkMode') === 'true';
 let monochromeMode = localStorage.getItem('monochromeMode') === 'true';
@@ -119,9 +127,14 @@ async function fetchHydrometers() {
             throw new Error(data.error);
         }
 
+        // Update temperature config if provided
+        if (data.config) {
+            tempConfig = data.config;
+        }
+
         // Hide status after successful load
         document.getElementById('status').style.display = 'none';
-        return data;
+        return data.devices || data;
     } catch (error) {
         showStatus(`Error fetching data: ${error.message}`, 'error');
         console.error('Fetch error:', error);
@@ -205,17 +218,17 @@ function createChart(deviceId, telemetryData, timeRange = 24) {
     const tempColors = sortedData.map(d => {
         const temp = d.temperature;
         if (monochromeMode) {
-            if (temp < 18 || temp > 28) {
+            if (temp < tempConfig.tempDangerMin || temp > tempConfig.tempDangerMax) {
                 return darkMode ? 'rgb(212, 212, 212)' : 'rgb(82, 82, 82)'; // danger
-            } else if ((temp >= 18 && temp < 20) || (temp > 26 && temp <= 28)) {
+            } else if ((temp >= tempConfig.tempDangerMin && temp < tempConfig.tempWarningMin) || (temp > tempConfig.tempWarningMax && temp <= tempConfig.tempDangerMax)) {
                 return darkMode ? 'rgb(163, 163, 163)' : 'rgb(115, 115, 115)'; // warning
             } else {
                 return darkMode ? 'rgb(115, 115, 115)' : 'rgb(64, 64, 64)'; // good
             }
         } else {
-            if (temp < 18 || temp > 28) {
+            if (temp < tempConfig.tempDangerMin || temp > tempConfig.tempDangerMax) {
                 return 'rgb(239, 68, 68)'; // red-500
-            } else if ((temp >= 18 && temp < 20) || (temp > 26 && temp <= 28)) {
+            } else if ((temp >= tempConfig.tempDangerMin && temp < tempConfig.tempWarningMin) || (temp > tempConfig.tempWarningMax && temp <= tempConfig.tempDangerMax)) {
                 return 'rgb(249, 115, 22)'; // orange-500
             } else {
                 return 'rgb(34, 197, 94)'; // green-500
@@ -395,21 +408,24 @@ function displayDevices(hydrometers) {
             ? `<div class="alert alert-warning mb-4">⚠️ Low Battery Warning: ${latestData.battery.toFixed(0)}% - Please charge soon!</div>`
             : '';
 
-        // Check for high temperature
-        const highTemp = latestData && latestData.temperature > 28;
+        // Check for temperature warnings
+        const highTemp = latestData && latestData.temperature > tempConfig.tempDangerMax;
+        const lowTemp = latestData && latestData.temperature < tempConfig.tempDangerMin;
         const tempWarning = highTemp
-            ? `<div class="alert alert-danger mb-4">🌡️ High Temperature Warning: ${latestData.temperature.toFixed(1)}°C - Temperature exceeds 28°C!</div>`
+            ? `<div class="alert alert-danger mb-4">🌡️ High Temperature Warning: ${latestData.temperature.toFixed(1)}°C - Temperature exceeds ${tempConfig.tempDangerMax}°C!</div>`
+            : lowTemp
+            ? `<div class="alert alert-danger mb-4">🌡️ Low Temperature Warning: ${latestData.temperature.toFixed(1)}°C - Temperature below ${tempConfig.tempDangerMin}°C!</div>`
             : '';
 
         // Determine temperature color class
         let tempClass = 'info-card';
         if (latestData) {
             const temp = latestData.temperature;
-            if (temp < 18 || temp > 28) {
+            if (temp < tempConfig.tempDangerMin || temp > tempConfig.tempDangerMax) {
                 tempClass = 'info-card temp-danger';
-            } else if ((temp >= 18 && temp < 20) || (temp > 26 && temp <= 28)) {
+            } else if ((temp >= tempConfig.tempDangerMin && temp < tempConfig.tempWarningMin) || (temp > tempConfig.tempWarningMax && temp <= tempConfig.tempDangerMax)) {
                 tempClass = 'info-card temp-warning';
-            } else if (temp >= 20 && temp <= 26) {
+            } else if (temp >= tempConfig.tempWarningMin && temp <= tempConfig.tempWarningMax) {
                 tempClass = 'info-card temp-good';
             }
         }

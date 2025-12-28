@@ -1,13 +1,18 @@
 const https = require('https');
 const { URL, URLSearchParams } = require('url');
 
-// Get credentials from environment variables
+// Get credentials and configuration from environment variables
 const CONFIG = {
     email: process.env.RAPT_EMAIL,
     apiSecret: process.env.RAPT_API_SECRET,
     authUrl: 'https://id.rapt.io/connect/token',
     apiUrl: 'https://api.rapt.io/api',
-    manualOriginalGravity: process.env.RAPT_MANUAL_OG ? parseFloat(process.env.RAPT_MANUAL_OG) : null
+    manualOriginalGravity: process.env.RAPT_MANUAL_OG ? parseFloat(process.env.RAPT_MANUAL_OG) : null,
+    // Temperature limits (defaults: danger < 18 or > 28, warning 18-20 or 26-28, good 20-26)
+    tempDangerMin: process.env.TEMP_DANGER_MIN ? parseFloat(process.env.TEMP_DANGER_MIN) : 18,
+    tempWarningMin: process.env.TEMP_WARNING_MIN ? parseFloat(process.env.TEMP_WARNING_MIN) : 20,
+    tempWarningMax: process.env.TEMP_WARNING_MAX ? parseFloat(process.env.TEMP_WARNING_MAX) : 26,
+    tempDangerMax: process.env.TEMP_DANGER_MAX ? parseFloat(process.env.TEMP_DANGER_MAX) : 28
 };
 
 let accessToken = null;
@@ -266,7 +271,15 @@ exports.handler = async (event, context) => {
         return {
             statusCode: 200,
             headers,
-            body: JSON.stringify(data)
+            body: JSON.stringify({
+                devices: data,
+                config: {
+                    tempDangerMin: CONFIG.tempDangerMin,
+                    tempWarningMin: CONFIG.tempWarningMin,
+                    tempWarningMax: CONFIG.tempWarningMax,
+                    tempDangerMax: CONFIG.tempDangerMax
+                }
+            })
         };
     } catch (error) {
         return {

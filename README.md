@@ -41,6 +41,10 @@ Real-time fermentation monitoring dashboard for RAPT.io devices.
    - `RAPT_EMAIL`: Your RAPT.io account email
    - `RAPT_API_SECRET`: Your RAPT.io API secret
    - `RAPT_MANUAL_OG` (optional): Manual Original Gravity (e.g., `1063.4`)
+   - `TEMP_DANGER_MIN` (optional): Minimum safe temperature in °C (default: 18)
+   - `TEMP_WARNING_MIN` (optional): Lower optimal temperature in °C (default: 20)
+   - `TEMP_WARNING_MAX` (optional): Upper optimal temperature in °C (default: 26)
+   - `TEMP_DANGER_MAX` (optional): Maximum safe temperature in °C (default: 28)
 
 5. **Deploy**
    - Click "Deploy site"
@@ -80,10 +84,29 @@ Real-time fermentation monitoring dashboard for RAPT.io devices.
 
 ### Temperature Warnings
 
-The dashboard shows colored indicators for temperature:
-- **Green**: 20-26°C (optimal range)
-- **Orange**: 18-20°C or 26-28°C (warning range)
-- **Red**: Below 18°C or above 28°C (danger range)
+The dashboard shows colored indicators for temperature based on configurable ranges:
+
+**Default Temperature Ranges:**
+- **Green (Good)**: 20-26°C (optimal fermentation range)
+- **Orange (Warning)**: 18-20°C or 26-28°C (acceptable but caution advised)
+- **Red (Danger)**: Below 18°C or above 28°C (may harm fermentation)
+
+**Custom Temperature Limits:**
+
+You can customize these ranges using environment variables to match your specific fermentation needs:
+
+- **TEMP_DANGER_MIN** (default: 18): Minimum safe temperature - below this shows red
+- **TEMP_WARNING_MIN** (default: 20): Lower optimal temperature - between danger and warning shows orange
+- **TEMP_WARNING_MAX** (default: 26): Upper optimal temperature - between warning min/max shows green
+- **TEMP_DANGER_MAX** (default: 28): Maximum safe temperature - above this shows red
+
+**Example:** For a lager fermentation (cooler temps), you might set:
+```
+TEMP_DANGER_MIN=8
+TEMP_WARNING_MIN=10
+TEMP_WARNING_MAX=13
+TEMP_DANGER_MAX=15
+```
 
 ## Technology Stack
 

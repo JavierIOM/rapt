@@ -14,6 +14,7 @@ let tempConfig = {
 // Theme management
 let darkMode = localStorage.getItem('darkMode') === 'true';
 let monochromeMode = localStorage.getItem('monochromeMode') === 'true';
+let coldCrashMode = localStorage.getItem('coldCrashMode') === 'true';
 
 function applyTheme() {
     const body = document.body;
@@ -33,12 +34,16 @@ function applyTheme() {
     // Update button states
     const darkToggle = document.getElementById('darkModeToggle');
     const monoToggle = document.getElementById('monochromeToggle');
+    const coldCrashToggle = document.getElementById('coldCrashToggle');
 
     if (darkToggle) {
         darkToggle.classList.toggle('active', darkMode);
     }
     if (monoToggle) {
         monoToggle.classList.toggle('active', monochromeMode);
+    }
+    if (coldCrashToggle) {
+        coldCrashToggle.classList.toggle('active', coldCrashMode);
     }
 
     // Re-render charts with updated colors if they exist
@@ -62,6 +67,14 @@ function toggleMonochromeMode() {
     monochromeMode = !monochromeMode;
     localStorage.setItem('monochromeMode', monochromeMode);
     applyTheme();
+}
+
+function toggleColdCrashMode() {
+    coldCrashMode = !coldCrashMode;
+    localStorage.setItem('coldCrashMode', coldCrashMode);
+    applyTheme();
+    // Reload data to update temperature warnings
+    loadData();
 }
 
 // Apply theme on load
@@ -217,8 +230,12 @@ function createChart(deviceId, telemetryData, timeRange = 24) {
     // Create dynamic colors for temperature based on value and theme
     const tempColors = sortedData.map(d => {
         const temp = d.temperature;
+        // In cold crash mode, ignore low temperatures (treat them as good)
+        const isLowTemp = temp < tempConfig.tempDangerMin;
+        const isHighTemp = temp > tempConfig.tempDangerMax;
+
         if (monochromeMode) {
-            if (temp < tempConfig.tempDangerMin || temp > tempConfig.tempDangerMax) {
+            if ((isLowTemp && !coldCrashMode) || isHighTemp) {
                 return darkMode ? 'rgb(212, 212, 212)' : 'rgb(82, 82, 82)'; // danger
             } else if ((temp >= tempConfig.tempDangerMin && temp < tempConfig.tempWarningMin) || (temp > tempConfig.tempWarningMax && temp <= tempConfig.tempDangerMax)) {
                 return darkMode ? 'rgb(163, 163, 163)' : 'rgb(115, 115, 115)'; // warning
@@ -226,7 +243,7 @@ function createChart(deviceId, telemetryData, timeRange = 24) {
                 return darkMode ? 'rgb(115, 115, 115)' : 'rgb(64, 64, 64)'; // good
             }
         } else {
-            if (temp < tempConfig.tempDangerMin || temp > tempConfig.tempDangerMax) {
+            if ((isLowTemp && !coldCrashMode) || isHighTemp) {
                 return 'rgb(239, 68, 68)'; // red-500
             } else if ((temp >= tempConfig.tempDangerMin && temp < tempConfig.tempWarningMin) || (temp > tempConfig.tempWarningMax && temp <= tempConfig.tempDangerMax)) {
                 return 'rgb(249, 115, 22)'; // orange-500
@@ -408,24 +425,30 @@ function displayDevices(hydrometers) {
             ? `<div class="alert alert-warning mb-4">⚠️ Low Battery Warning: ${latestData.battery.toFixed(0)}% - Please charge soon!</div>`
             : '';
 
-        // Check for temperature warnings
+        // Check for temperature warnings (ignore low temps in cold crash mode)
         const highTemp = latestData && latestData.temperature > tempConfig.tempDangerMax;
-        const lowTemp = latestData && latestData.temperature < tempConfig.tempDangerMin;
+        const lowTemp = latestData && latestData.temperature < tempConfig.tempDangerMin && !coldCrashMode;
         const tempWarning = highTemp
             ? `<div class="alert alert-danger mb-4">🌡️ High Temperature Warning: ${latestData.temperature.toFixed(1)}°C - Temperature exceeds ${tempConfig.tempDangerMax}°C!</div>`
             : lowTemp
             ? `<div class="alert alert-danger mb-4">🌡️ Low Temperature Warning: ${latestData.temperature.toFixed(1)}°C - Temperature below ${tempConfig.tempDangerMin}°C!</div>`
             : '';
 
-        // Determine temperature color class
+        // Determine temperature color class (ignore low temps in cold crash mode)
         let tempClass = 'info-card';
         if (latestData) {
             const temp = latestData.temperature;
-            if (temp < tempConfig.tempDangerMin || temp > tempConfig.tempDangerMax) {
+            const isLowDanger = temp < tempConfig.tempDangerMin && !coldCrashMode;
+            const isHighDanger = temp > tempConfig.tempDangerMax;
+
+            if (isLowDanger || isHighDanger) {
                 tempClass = 'info-card temp-danger';
             } else if ((temp >= tempConfig.tempDangerMin && temp < tempConfig.tempWarningMin) || (temp > tempConfig.tempWarningMax && temp <= tempConfig.tempDangerMax)) {
                 tempClass = 'info-card temp-warning';
             } else if (temp >= tempConfig.tempWarningMin && temp <= tempConfig.tempWarningMax) {
+                tempClass = 'info-card temp-good';
+            } else if (coldCrashMode && temp < tempConfig.tempDangerMin) {
+                // In cold crash mode, low temps are okay (show as good)
                 tempClass = 'info-card temp-good';
             }
         }
@@ -520,6 +543,7 @@ async function loadData() {
 document.getElementById('refreshBtn').addEventListener('click', loadData);
 
 // Theme toggle handlers
+document.getElementById('coldCrashToggle').addEventListener('click', toggleColdCrashMode);
 document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
 document.getElementById('monochromeToggle').addEventListener('click', toggleMonochromeMode);
 

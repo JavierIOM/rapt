@@ -94,8 +94,9 @@ async function fetchTelemetry(hydrometerId) {
 
     console.log(`📈 Fetching telemetry for hydrometer ${hydrometerId}...`);
 
+    // Fetch last 7 days of data to support all time ranges in the UI
     const endDate = new Date();
-    const startDate = new Date(endDate.getTime() - (24 * 60 * 60 * 1000));
+    const startDate = new Date(endDate.getTime() - (7 * 24 * 60 * 60 * 1000));
 
     try {
         const url = `${CONFIG.apiUrl}/Hydrometers/GetTelemetry?hydrometerId=${hydrometerId}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`;

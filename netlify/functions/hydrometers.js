@@ -115,6 +115,13 @@ async function fetchTelemetry(hydrometerId) {
         });
 
         console.log(`✅ Fetched ${data.length || 0} telemetry points`);
+
+        // Log first telemetry point to see all available fields
+        if (data && data.length > 0) {
+            console.log('📊 Sample telemetry data (first point):');
+            console.log(JSON.stringify(data[0], null, 2));
+        }
+
         return data;
     } catch (error) {
         console.log(`⚠️  Telemetry endpoint failed, trying alternative...`);
@@ -153,10 +160,18 @@ async function fetchProfileSession(sessionId) {
             }
         });
 
+        // Log profile data to see all available fields
+        if (data && data.length > 0) {
+            console.log('📊 Sample profile data (first profile):');
+            console.log(JSON.stringify(data[0], null, 2));
+        }
+
         for (let profile of data) {
             if (profile.sessions) {
                 const session = profile.sessions.find(s => s.id === sessionId);
                 if (session) {
+                    console.log('📊 Found profile session:');
+                    console.log(JSON.stringify(session, null, 2));
                     return session;
                 }
             }
@@ -186,6 +201,12 @@ async function fetchHydrometers() {
         });
 
         console.log(`✅ Found ${data.length} device(s)`);
+
+        // Log first device structure to see all available fields
+        if (data && data.length > 0) {
+            console.log('📊 Sample device data (first device):');
+            console.log(JSON.stringify(data[0], null, 2));
+        }
 
         for (let device of data) {
             console.log(`   Device: ${device.name || device.id}`);

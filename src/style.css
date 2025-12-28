@@ -1,0 +1,271 @@
+@import "tailwindcss";
+
+/* Theme Variables */
+:root {
+  --bg-primary: white;
+  --bg-secondary: rgb(248, 250, 252);
+  --bg-tertiary: rgb(226, 232, 240);
+  --text-primary: rgb(30, 41, 59);
+  --text-secondary: rgb(71, 85, 105);
+  --text-tertiary: rgb(148, 163, 184);
+  --border-color: rgb(226, 232, 240);
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --card-gradient-from: rgb(248, 250, 252);
+  --card-gradient-to: rgb(226, 232, 240);
+}
+
+body.dark-mode {
+  --bg-primary: rgb(30, 41, 59);
+  --bg-secondary: rgb(51, 65, 85);
+  --bg-tertiary: rgb(71, 85, 105);
+  --text-primary: rgb(248, 250, 252);
+  --text-secondary: rgb(203, 213, 225);
+  --text-tertiary: rgb(148, 163, 184);
+  --border-color: rgb(71, 85, 105);
+  --shadow-color: rgba(0, 0, 0, 0.5);
+  --card-gradient-from: rgb(51, 65, 85);
+  --card-gradient-to: rgb(71, 85, 105);
+}
+
+body.monochrome-mode {
+  --bg-primary: white;
+  --bg-secondary: rgb(245, 245, 245);
+  --bg-tertiary: rgb(229, 229, 229);
+  --text-primary: rgb(23, 23, 23);
+  --text-secondary: rgb(82, 82, 82);
+  --text-tertiary: rgb(115, 115, 115);
+  --border-color: rgb(212, 212, 212);
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --card-gradient-from: rgb(245, 245, 245);
+  --card-gradient-to: rgb(229, 229, 229);
+}
+
+body.dark-mode.monochrome-mode {
+  --bg-primary: rgb(23, 23, 23);
+  --bg-secondary: rgb(38, 38, 38);
+  --bg-tertiary: rgb(64, 64, 64);
+  --text-primary: rgb(245, 245, 245);
+  --text-secondary: rgb(212, 212, 212);
+  --text-tertiary: rgb(163, 163, 163);
+  --border-color: rgb(82, 82, 82);
+  --shadow-color: rgba(0, 0, 0, 0.7);
+  --card-gradient-from: rgb(38, 38, 38);
+  --card-gradient-to: rgb(64, 64, 64);
+}
+
+/* Background gradient changes */
+body {
+  transition: background 0.5s ease;
+}
+
+body.dark-mode {
+  background: linear-gradient(to bottom right, rgb(15, 23, 42), rgb(0, 0, 0), rgb(15, 23, 42)) !important;
+}
+
+body.monochrome-mode {
+  background: linear-gradient(to bottom right, rgb(245, 245, 245), rgb(229, 229, 229), rgb(245, 245, 245)) !important;
+}
+
+body.dark-mode.monochrome-mode {
+  background: linear-gradient(to bottom right, rgb(0, 0, 0), rgb(23, 23, 23), rgb(0, 0, 0)) !important;
+}
+
+.card {
+  background-color: var(--bg-primary);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -2px var(--shadow-color);
+  padding: 1.5rem;
+  transition: box-shadow 0.3s, background-color 0.3s;
+}
+
+.card:hover {
+  box-shadow: 0 20px 25px -5px var(--shadow-color), 0 10px 10px -5px var(--shadow-color);
+}
+
+.info-card {
+  background: linear-gradient(to bottom right, var(--card-gradient-from), var(--card-gradient-to));
+  border-radius: 0.5rem;
+  padding: 1rem;
+  text-align: center;
+  transition: background 0.3s;
+}
+
+.info-card-value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  transition: color 0.3s;
+}
+
+.info-card-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: color 0.3s;
+}
+
+.temp-good {
+  background: linear-gradient(to bottom right, rgb(74, 222, 128), rgb(22, 163, 74));
+  color: white;
+  transition: background 0.3s;
+}
+
+.temp-warning {
+  background: linear-gradient(to bottom right, rgb(251, 146, 60), rgb(234, 88, 12));
+  color: white;
+  transition: background 0.3s;
+}
+
+.temp-danger {
+  background: linear-gradient(to bottom right, rgb(248, 113, 113), rgb(220, 38, 38));
+  color: white;
+  transition: background 0.3s;
+}
+
+body.monochrome-mode .temp-good {
+  background: linear-gradient(to bottom right, rgb(82, 82, 82), rgb(23, 23, 23));
+  color: white;
+}
+
+body.monochrome-mode .temp-warning {
+  background: linear-gradient(to bottom right, rgb(163, 163, 163), rgb(115, 115, 115));
+  color: white;
+}
+
+body.monochrome-mode .temp-danger {
+  background: linear-gradient(to bottom right, rgb(212, 212, 212), rgb(163, 163, 163));
+  color: rgb(23, 23, 23);
+}
+
+body.dark-mode.monochrome-mode .temp-good {
+  background: linear-gradient(to bottom right, rgb(163, 163, 163), rgb(115, 115, 115));
+  color: white;
+}
+
+body.dark-mode.monochrome-mode .temp-warning {
+  background: linear-gradient(to bottom right, rgb(115, 115, 115), rgb(82, 82, 82));
+  color: white;
+}
+
+body.dark-mode.monochrome-mode .temp-danger {
+  background: linear-gradient(to bottom right, rgb(82, 82, 82), rgb(64, 64, 64));
+  color: white;
+}
+
+.alert {
+  border-radius: 0.75rem;
+  padding: 1rem;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  transition: background 0.3s;
+}
+
+.alert-warning {
+  background: linear-gradient(to right, rgb(251, 146, 60), rgb(249, 115, 22));
+  color: white;
+}
+
+.alert-danger {
+  background: linear-gradient(to right, rgb(239, 68, 68), rgb(220, 38, 38));
+  color: white;
+}
+
+body.monochrome-mode .alert-warning {
+  background: linear-gradient(to right, rgb(163, 163, 163), rgb(115, 115, 115));
+  color: white;
+}
+
+body.monochrome-mode .alert-danger {
+  background: linear-gradient(to right, rgb(82, 82, 82), rgb(64, 64, 64));
+  color: white;
+}
+
+/* Theme Toggle Buttons - Top Right */
+.theme-controls-top-right {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  gap: 0.75rem;
+  z-index: 50;
+}
+
+.theme-toggle {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.theme-toggle.active {
+  background: rgba(167, 139, 250, 0.3);
+  border-color: rgb(167, 139, 250);
+}
+
+/* Responsive adjustment for smaller screens */
+@media (max-width: 640px) {
+  .theme-controls-top-right {
+    top: 1rem;
+    right: 1rem;
+    gap: 0.5rem;
+  }
+
+  .theme-toggle {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Floating Bubbles */
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.3), rgba(167, 139, 250, 0.1));
+  box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.2), 0 0 20px rgba(167, 139, 250, 0.3);
+  animation: float linear infinite;
+  pointer-events: none;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0) translateX(0) scale(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-100vh) translateX(var(--float-x)) scale(1);
+    opacity: 0;
+  }
+}

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAPT.io Dashboard</title>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen overflow-x-hidden">
+    <!-- Floating Bubbles Background -->
+    <div id="bubbles" class="fixed inset-0 pointer-events-none overflow-hidden"></div>
+
+    <!-- Theme Controls - Top Right -->
+    <div class="theme-controls-top-right">
+        <button id="darkModeToggle" class="theme-toggle">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+            </svg>
+            Dark Mode
+        </button>
+        <button id="monochromeToggle" class="theme-toggle">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+            </svg>
+            Monochrome
+        </button>
+    </div>
+
+    <div class="container mx-auto px-4 py-8 max-w-7xl relative z-10">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-5xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400 mb-4 drop-shadow-lg">
+                RAPT.io Dashboard
+            </h1>
+            <p class="text-slate-300 text-lg">Real-time fermentation monitoring</p>
+        </div>
+
+        <!-- Status Message -->
+        <div id="status" class="status loading bg-white/10 backdrop-blur-sm text-white px-6 py-4 rounded-xl mb-8 text-center shadow-2xl border border-white/20">
+            Loading data...
+        </div>
+
+        <!-- Devices Container -->
+        <div id="devices" class="space-y-8 mb-12"></div>
+
+        <!-- Refresh Button -->
+        <div class="text-center">
+            <button id="refreshBtn" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                <span class="flex items-center gap-2 justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Refresh Data
+                </span>
+            </button>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>

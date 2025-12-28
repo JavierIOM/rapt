@@ -507,11 +507,14 @@ function displayDevices(hydrometers) {
                         ${device.isLatestFirmware === false ? '<span class="text-orange-500">⚠️ Update Available</span>' : ''}
                     </div>
                 </div>
-                <div class="text-slate-500 font-mono text-sm">ID: ${device.id}</div>
+                <div class="text-right">
+                    <div class="text-slate-500 font-mono text-sm">ID: ${device.id}</div>
+                    ${latestData ? `<div class="text-slate-400 text-xs mt-1">Battery: ${latestData.battery?.toFixed(0) || 'N/A'}% | Signal: ${latestData.rssi || 'N/A'} dBm</div>` : ''}
+                </div>
             </div>
 
             ${latestData ? `
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
                     <div class="${tempClass}">
                         <div class="info-card-label mb-2">Temperature</div>
                         <div class="info-card-value">${latestData.temperature?.toFixed(1) || 'N/A'}°C</div>
@@ -533,18 +536,6 @@ function displayDevices(hydrometers) {
                         <div class="info-card-value">${latestData.attenuation?.toFixed(1) || 'N/A'}%</div>
                     </div>
                     <div class="info-card">
-                        <div class="info-card-label mb-2">Battery</div>
-                        <div class="info-card-value">${latestData.battery?.toFixed(0) || 'N/A'}%</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-card-label mb-2">Signal (RSSI)</div>
-                        <div class="info-card-value text-xl">${latestData.rssi || 'N/A'}<span class="text-lg"> dBm</span></div>
-                    </div>
-                    <div class="info-card col-span-2 md:col-span-1">
-                        <div class="info-card-label mb-2">Last Reading</div>
-                        <div class="info-card-value text-xl">${formatTime(latestData.createdOn)}</div>
-                    </div>
-                    <div class="info-card col-span-2 md:col-span-1">
                         <div class="info-card-label mb-2">Last Activity</div>
                         <div class="info-card-value text-xl">${formatTime(device.lastActivityTime)}</div>
                     </div>

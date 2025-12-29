@@ -12,7 +12,9 @@ const CONFIG = {
     tempDangerMin: process.env.TEMP_DANGER_MIN ? parseFloat(process.env.TEMP_DANGER_MIN) : 18,
     tempWarningMin: process.env.TEMP_WARNING_MIN ? parseFloat(process.env.TEMP_WARNING_MIN) : 20,
     tempWarningMax: process.env.TEMP_WARNING_MAX ? parseFloat(process.env.TEMP_WARNING_MAX) : 26,
-    tempDangerMax: process.env.TEMP_DANGER_MAX ? parseFloat(process.env.TEMP_DANGER_MAX) : 28
+    tempDangerMax: process.env.TEMP_DANGER_MAX ? parseFloat(process.env.TEMP_DANGER_MAX) : 28,
+    // Debug mode - enables verbose logging (not recommended for production)
+    debug: process.env.DEBUG === 'true'
 };
 
 let accessToken = null;
@@ -116,8 +118,8 @@ async function fetchTelemetry(hydrometerId) {
 
         console.log(`✅ Fetched ${data.length || 0} telemetry points`);
 
-        // Log first telemetry point to see all available fields
-        if (data && data.length > 0) {
+        // Log first telemetry point to see all available fields (debug mode only)
+        if (CONFIG.debug && data && data.length > 0) {
             console.log('📊 Sample telemetry data (first point):');
             console.log(JSON.stringify(data[0], null, 2));
         }
@@ -160,8 +162,8 @@ async function fetchProfileSession(sessionId) {
             }
         });
 
-        // Log profile data to see all available fields
-        if (data && data.length > 0) {
+        // Log profile data to see all available fields (debug mode only)
+        if (CONFIG.debug && data && data.length > 0) {
             console.log('📊 Sample profile data (first profile):');
             console.log(JSON.stringify(data[0], null, 2));
         }
@@ -170,8 +172,10 @@ async function fetchProfileSession(sessionId) {
             if (profile.sessions) {
                 const session = profile.sessions.find(s => s.id === sessionId);
                 if (session) {
-                    console.log('📊 Found profile session:');
-                    console.log(JSON.stringify(session, null, 2));
+                    if (CONFIG.debug) {
+                        console.log('📊 Found profile session:');
+                        console.log(JSON.stringify(session, null, 2));
+                    }
                     return session;
                 }
             }
@@ -202,8 +206,8 @@ async function fetchHydrometers() {
 
         console.log(`✅ Found ${data.length} device(s)`);
 
-        // Log first device structure to see all available fields
-        if (data && data.length > 0) {
+        // Log first device structure to see all available fields (debug mode only)
+        if (CONFIG.debug && data && data.length > 0) {
             console.log('📊 Sample device data (first device):');
             console.log(JSON.stringify(data[0], null, 2));
         }
@@ -275,11 +279,22 @@ async function fetchHydrometers() {
 
 // Netlify Function handler
 exports.handler = async (event, context) => {
+    // Determine allowed origin based on request
+    const origin = event.headers.origin || event.headers.Origin || '';
+    const allowedOrigins = [
+        'http://localhost:5173',  // Vite dev server
+        'http://localhost:8888',  // Netlify dev
+        'https://rapt-dashboard.netlify.app',  // Production (update with actual Netlify domain)
+    ];
+
+    const isAllowedOrigin = allowedOrigins.some(allowed => origin.startsWith(allowed));
+    const corsOrigin = isAllowedOrigin ? origin : allowedOrigins[allowedOrigins.length - 1];
+
     // Set CORS headers
     const headers = {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': corsOrigin,
         'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Content-Type': 'application/json'
     };
 

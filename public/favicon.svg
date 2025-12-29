@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Gradient for liquid -->
+  <defs>
+    <linearGradient id="liquidGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:rgb(147,51,234);stop-opacity:1" />
+      <stop offset="100%" style="stop-color:rgb(79,70,229);stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="glassGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:rgb(226,232,240);stop-opacity:0.3" />
+      <stop offset="50%" style="stop-color:rgb(248,250,252);stop-opacity:0.5" />
+      <stop offset="100%" style="stop-color:rgb(226,232,240);stop-opacity:0.3" />
+    </linearGradient>
+  </defs>
+
+  <!-- Flask/Beaker shape -->
+  <path d="M 35 15 L 35 35 L 25 65 Q 25 85 50 85 Q 75 85 75 65 L 65 35 L 65 15 Z"
+        fill="url(#glassGrad)" stroke="rgb(148,163,184)" stroke-width="2.5"/>
+
+  <!-- Fermenting liquid inside -->
+  <path d="M 36 40 L 28 65 Q 28 80 50 80 Q 72 80 72 65 L 64 40 Z"
+        fill="url(#liquidGrad)" opacity="0.9"/>
+
+  <!-- Bubbles rising (fermentation) -->
+  <circle cx="45" cy="60" r="2.5" fill="rgba(255,255,255,0.6)">
+    <animate attributeName="cy" values="60;35;60" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.6;0;0.6" dur="3s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="55" cy="65" r="2" fill="rgba(255,255,255,0.5)">
+    <animate attributeName="cy" values="65;40;65" dur="2.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.5;0;0.5" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="50" cy="70" r="3" fill="rgba(255,255,255,0.7)">
+    <animate attributeName="cy" values="70;45;70" dur="3.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.7;0;0.7" dur="3.5s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Flask neck/opening -->
+  <rect x="35" y="15" width="30" height="3" fill="rgb(148,163,184)" rx="1"/>
+
+  <!-- Highlight on glass -->
+  <path d="M 40 25 Q 42 50 40 70" stroke="rgba(255,255,255,0.4)" stroke-width="2" fill="none"/>
+</svg>

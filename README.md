@@ -45,6 +45,7 @@ Real-time fermentation monitoring dashboard for RAPT.io devices.
    - `TEMP_WARNING_MIN` (optional): Lower optimal temperature in °C (default: 20)
    - `TEMP_WARNING_MAX` (optional): Upper optimal temperature in °C (default: 26)
    - `TEMP_DANGER_MAX` (optional): Maximum safe temperature in °C (default: 28)
+   - `DEBUG` (optional): Enable verbose logging for troubleshooting (default: `false`, **NOT recommended for production**)
 
 5. **Deploy**
    - Click "Deploy site"
@@ -81,6 +82,7 @@ Real-time fermentation monitoring dashboard for RAPT.io devices.
 - **RAPT_EMAIL** (required): Your RAPT.io account email
 - **RAPT_API_SECRET** (required): Your RAPT.io API secret/password
 - **RAPT_MANUAL_OG** (optional): Set a manual Original Gravity if the API doesn't provide it
+- **DEBUG** (optional): Enable verbose logging that exposes device data in function logs. Set to `true` only for local development/troubleshooting. **NOT recommended for production**. Default: `false`
 
 ### Temperature Warnings
 

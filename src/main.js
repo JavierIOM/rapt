@@ -796,14 +796,36 @@ modal.addEventListener('click', (e) => {
 // Load data on page load
 loadData();
 
-// Sync cold crash state from server on load (authoritative — overrides stale localStorage)
+// Sync cold crash state on load.
+// If the user has never explicitly set cold crash (no localStorage key), treat as false
+// and push that to the server to clear any stale Blobs state.
+// If they have set it locally, trust localStorage and sync server to match.
 fetch('/.netlify/functions/cold-crash')
     .then(r => r.json())
     .then(({ coldCrash }) => {
-        if (coldCrash !== coldCrashMode) {
-            coldCrashMode = coldCrash;
-            localStorage.setItem('coldCrashMode', coldCrashMode);
+        const hasLocalState = localStorage.getItem('coldCrashMode') !== null;
+        if (!hasLocalState) {
+            // No local preference — force off and clear server state if needed
+            if (coldCrash) {
+                const secret = localStorage.getItem('coldCrashSecret');
+                if (secret) {
+                    fetch('/.netlify/functions/cold-crash?state=false', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${secret}` }
+                    }).catch(() => {});
+                }
+            }
+            coldCrashMode = false;
             applyTheme();
+        } else if (coldCrash !== coldCrashMode) {
+            // Has local state — push it to server
+            const secret = localStorage.getItem('coldCrashSecret');
+            if (secret) {
+                fetch(`/.netlify/functions/cold-crash?state=${coldCrashMode}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${secret}` }
+                }).catch(() => {});
+            }
         }
     })
     .catch(() => {});

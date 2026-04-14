@@ -574,10 +574,10 @@ function displayDevices(hydrometers) {
                     <label for="timeRange-${device.id}" class="block text-sm font-medium time-range-label mb-2">Time Range:</label>
                     <select id="timeRange-${device.id}" class="time-range-select">
                         <option value="3">Last 3 Hours</option>
-                        <option value="6">Last 6 Hours</option>
+                        <option value="6" selected>Last 6 Hours</option>
                         <option value="12">Last 12 Hours</option>
                         <option value="18">Last 18 Hours</option>
-                        <option value="24" selected>Last 24 Hours</option>
+                        <option value="24">Last 24 Hours</option>
                         <option value="36">Last 36 Hours</option>
                         <option value="all">All Time</option>
                     </select>
@@ -593,7 +593,7 @@ function displayDevices(hydrometers) {
         // Create chart if we have telemetry data
         if (device.telemetry && device.telemetry.length > 0) {
             setTimeout(() => {
-                createChart(device.id, device.telemetry, 24);
+                createChart(device.id, device.telemetry, 6);
 
                 // Add event listener for time range change
                 const timeRangeSelect = document.getElementById(`timeRange-${device.id}`);

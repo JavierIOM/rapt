@@ -610,11 +610,6 @@ function displayDevices(hydrometers) {
                     <div class="info-card-label mb-1 text-xs">Brew Day</div>
                     <div class="info-card-value text-2xl">Day ${brewDay}</div>
                 </div>` : '',
-            tFGSG !== null ? `
-                <div class="info-card" style="min-width:140px;flex:1;max-width:220px">
-                    <div class="info-card-label mb-1 text-xs">Target FG</div>
-                    <div class="info-card-value text-xl">${tFGSG.toFixed(3)}</div>
-                </div>` : '',
             estFinalABV !== null ? `
                 <div class="info-card" style="min-width:140px;flex:1;max-width:220px">
                     <div class="info-card-label mb-1 text-xs">Est. Final ABV</div>
@@ -659,6 +654,11 @@ function displayDevices(hydrometers) {
                         <div class="info-card-label mb-1 text-xs">Gravity</div>
                         <div class="info-card-value text-xl">${curSG ? curSG.toFixed(3) : 'N/A'}</div>
                     </div>
+                    ${tFGSG !== null ? `
+                    <div class="info-card">
+                        <div class="info-card-label mb-1 text-xs">Target FG</div>
+                        <div class="info-card-value text-xl">${tFGSG.toFixed(3)}</div>
+                    </div>` : ''}
                     <div class="info-card">
                         <div class="info-card-label mb-1 text-xs">ABV</div>
                         <div class="info-card-value text-2xl">${latestData.abv?.toFixed(2) || 'N/A'}%</div>

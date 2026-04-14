@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.10.0] - 2026-04-14
+## [3.0.0] - 2026-04-14
 
 ### Fixed
 - Profile name (e.g. "Helles") now correctly displayed on device card — was never appearing because `fetchProfileSession()` wasn't finding it; name is now read directly from `device.activeProfileSession.name` which is already present on the GetHydrometers response

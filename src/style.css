@@ -13,8 +13,8 @@
   --border-color: #D9D9D9;
   --accent: #F56400;
   --shadow-color: rgba(0, 0, 0, 0.08);
-  --card-gradient-from: #E8E4DF;
-  --card-gradient-to: #DAD5CF;
+  --card-gradient-from: #D9D4CE;
+  --card-gradient-to: #CBC5BE;
 }
 
 body.dark-mode {

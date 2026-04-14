@@ -606,17 +606,17 @@ function displayDevices(hydrometers) {
         // Extra stat cards (brew day, target FG, est. final ABV, ETA)
         const extraCards = [
             brewDay !== null ? `
-                <div class="info-card" style="min-width:140px;flex:1;max-width:220px">
+                <div class="info-card" style="min-width:140px;flex:1;max-width:220px" data-tooltip="Days since fermentation started">
                     <div class="info-card-label mb-1 text-xs">Brew Day</div>
                     <div class="info-card-value text-2xl">Day ${brewDay}</div>
                 </div>` : '',
             estFinalABV !== null ? `
-                <div class="info-card" style="min-width:140px;flex:1;max-width:220px">
+                <div class="info-card" style="min-width:140px;flex:1;max-width:220px" data-tooltip="Estimated ABV when gravity hits your target FG">
                     <div class="info-card-label mb-1 text-xs">Est. Final ABV</div>
                     <div class="info-card-value text-2xl">${estFinalABV.toFixed(2)}%</div>
                 </div>` : '',
             etaDays !== null ? `
-                <div class="info-card" style="min-width:140px;flex:1;max-width:220px">
+                <div class="info-card" style="min-width:140px;flex:1;max-width:220px" data-tooltip="Estimated days to reach target FG based on current drop rate">
                     <div class="info-card-label mb-1 text-xs">ETA to FG</div>
                     <div class="info-card-value text-2xl">${etaDays}d</div>
                 </div>` : '',
@@ -646,24 +646,24 @@ function displayDevices(hydrometers) {
 
             ${latestData ? `
                 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
-                    <div class="${tempClass}">
+                    <div class="${tempClass}" data-tooltip="Current fermentation temperature">
                         <div class="info-card-label mb-1 text-xs">Temperature</div>
                         <div class="info-card-value text-2xl">${latestData.temperature?.toFixed(1) || 'N/A'}°C</div>
                     </div>
-                    <div class="info-card">
+                    <div class="info-card" data-tooltip="Current specific gravity — sugar content remaining">
                         <div class="info-card-label mb-1 text-xs">Gravity</div>
                         <div class="info-card-value text-xl">${curSG ? curSG.toFixed(3) : 'N/A'}</div>
                     </div>
                     ${tFGSG !== null ? `
-                    <div class="info-card">
+                    <div class="info-card" data-tooltip="Target final gravity set in your RAPT profile">
                         <div class="info-card-label mb-1 text-xs">Target FG</div>
                         <div class="info-card-value text-xl">${tFGSG.toFixed(3)}</div>
                     </div>` : ''}
-                    <div class="info-card">
+                    <div class="info-card" data-tooltip="Alcohol by volume, calculated from OG and current gravity">
                         <div class="info-card-label mb-1 text-xs">ABV</div>
                         <div class="info-card-value text-2xl">${latestData.abv?.toFixed(2) || 'N/A'}%</div>
                     </div>
-                    <div class="info-card">
+                    <div class="info-card" data-tooltip="How much of the available sugars have been consumed">
                         <div class="info-card-label mb-1 text-xs">Attenuation</div>
                         <div class="info-card-value text-2xl">${latestData.attenuation?.toFixed(1) || 'N/A'}%</div>
                     </div>

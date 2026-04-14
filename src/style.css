@@ -612,6 +612,38 @@ body.dark-mode .device-name {
   transition: width 0.6s ease;
 }
 
+/* Stat card tooltips — desktop/hover-capable devices only */
+@media (hover: hover) {
+  .info-card[data-tooltip] {
+    position: relative;
+    cursor: default;
+  }
+
+  .info-card[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 23, 42, 0.92);
+    color: #f1f5f9;
+    padding: 0.4rem 0.7rem;
+    border-radius: 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 400;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+
+  .info-card[data-tooltip]:hover::after {
+    opacity: 1;
+  }
+}
+
 .firmware-update {
   color: #F56400;
   font-weight: 600;

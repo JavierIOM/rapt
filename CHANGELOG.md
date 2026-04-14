@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.3.1] - 2026-04-14
+
+### Changed
+- Removed Gravity Velocity stat card — value is still used internally for ETA calculation but no longer displayed
+
 ## [3.3.0] - 2026-04-14
 
 ### Added

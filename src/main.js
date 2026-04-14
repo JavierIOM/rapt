@@ -667,10 +667,6 @@ function displayDevices(hydrometers) {
                         <div class="info-card-label mb-1 text-xs">Attenuation</div>
                         <div class="info-card-value text-2xl">${latestData.attenuation?.toFixed(1) || 'N/A'}%</div>
                     </div>
-                    <div class="info-card">
-                        <div class="info-card-label mb-1 text-xs">Gravity Velocity</div>
-                        <div class="info-card-value text-lg">${latestData.gravityVelocity != null && Math.abs(latestData.gravityVelocity) <= 100 ? latestData.gravityVelocity.toFixed(2) : 'N/A'}<span class="text-sm"> ppd</span></div>
-                    </div>
                 </div>
 
                 ${extraCards ? `<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">${extraCards}</div>` : '<div class="mb-6"></div>'}

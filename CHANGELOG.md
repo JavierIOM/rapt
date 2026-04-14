@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.5.0] - 2026-04-14
+
+### Added
+- Telegram temperature alerts via `@raptzilla_bot` — scheduled check every 15 minutes
+- `netlify/functions/temp-monitor.js` — scheduled Netlify Function that fetches latest device readings and sends Telegram alerts for danger/warning temperature conditions
+- Alert cooldown via Netlify Blobs (`@netlify/blobs`) — prevents repeat alerts within a configurable window (default 60 min)
+- Four alert levels: danger-high, danger-low, warning-high, warning-low — each with independent cooldown tracking
+- Monitor self-alerts via Telegram if it fails to fetch data
+- `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` env vars
+- `ALERT_COOLDOWN_MINUTES` env var (optional, default 60)
+
+### Changed
+- `netlify.toml` — added `[functions."temp-monitor"]` with `schedule = "*/15 * * * *"`
+
 ## [2.4.0] - 2026-04-14
 
 ### Added

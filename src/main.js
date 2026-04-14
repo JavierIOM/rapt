@@ -606,22 +606,22 @@ function displayDevices(hydrometers) {
         // Extra stat cards (brew day, target FG, est. final ABV, ETA)
         const extraCards = [
             brewDay !== null ? `
-                <div class="info-card">
+                <div class="info-card" style="min-width:140px;flex:1;max-width:220px">
                     <div class="info-card-label mb-1 text-xs">Brew Day</div>
                     <div class="info-card-value text-2xl">Day ${brewDay}</div>
                 </div>` : '',
             tFGSG !== null ? `
-                <div class="info-card">
+                <div class="info-card" style="min-width:140px;flex:1;max-width:220px">
                     <div class="info-card-label mb-1 text-xs">Target FG</div>
                     <div class="info-card-value text-xl">${tFGSG.toFixed(3)}</div>
                 </div>` : '',
             estFinalABV !== null ? `
-                <div class="info-card">
+                <div class="info-card" style="min-width:140px;flex:1;max-width:220px">
                     <div class="info-card-label mb-1 text-xs">Est. Final ABV</div>
                     <div class="info-card-value text-2xl">${estFinalABV.toFixed(2)}%</div>
                 </div>` : '',
             etaDays !== null ? `
-                <div class="info-card">
+                <div class="info-card" style="min-width:140px;flex:1;max-width:220px">
                     <div class="info-card-label mb-1 text-xs">ETA to FG</div>
                     <div class="info-card-value text-2xl">${etaDays}d</div>
                 </div>` : '',
@@ -669,7 +669,7 @@ function displayDevices(hydrometers) {
                     </div>
                 </div>
 
-                ${extraCards ? `<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">${extraCards}</div>` : '<div class="mb-6"></div>'}
+                ${extraCards ? `<div class="flex flex-wrap justify-center gap-3 mb-6">${extraCards}</div>` : '<div class="mb-6"></div>'}
 
                 ${progressBar}
 

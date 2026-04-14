@@ -222,15 +222,22 @@ exports.handler = async (event) => {
             return { statusCode: 200, body: 'No readings' };
         }
 
-        // Load alert state from Netlify Blobs to enforce cooldowns
+        // Load alert state and cold crash flag from Netlify Blobs
         let alertState = {};
+        let coldCrashMode = false;
         try {
             const { getStore } = require('@netlify/blobs');
             const store = getStore('rapt-alerts');
             const saved = await store.get('alert-state', { type: 'json' });
             if (saved) alertState = saved;
+            const ccValue = await store.get('cold-crash', { type: 'json' });
+            coldCrashMode = ccValue === true;
         } catch (e) {
             console.log('Blobs unavailable, skipping cooldown state:', e.message);
+        }
+
+        if (coldCrashMode) {
+            console.log('Cold crash mode is active — low temperature alerts suppressed');
         }
 
         const now = Date.now();
@@ -245,24 +252,31 @@ exports.handler = async (event) => {
                 console.log(`${device.name}: temperature is null — skipping temp check`);
             } else {
                 const tempStatus = getTempStatus(device.temperature);
-                const tempKey = `${device.id}-temp-${tempStatus}`;
+                // Suppress low-temp alerts during a deliberate cold crash
+                const isLowStatus = tempStatus === 'danger-low' || tempStatus === 'warning-low';
+                const effectiveStatus = (isLowStatus && coldCrashMode) ? 'ok' : tempStatus;
+                const tempKey = `${device.id}-temp-${effectiveStatus}`;
 
-                if (tempStatus === 'ok') {
+                if (effectiveStatus === 'ok') {
                     // Clear temp alert state so it re-alerts if it goes bad again later
                     const tempKeys = Object.keys(alertState).filter(k => k.startsWith(`${device.id}-temp-`));
                     if (tempKeys.length > 0) {
                         tempKeys.forEach(k => delete alertState[k]);
                         stateChanged = true;
                     }
-                    console.log(`${device.name}: temp ${device.temperature.toFixed(1)}C - OK`);
+                    if (isLowStatus && coldCrashMode) {
+                        console.log(`${device.name}: temp ${device.temperature.toFixed(1)}C - low suppressed (cold crash active)`);
+                    } else {
+                        console.log(`${device.name}: temp ${device.temperature.toFixed(1)}C - OK`);
+                    }
                 } else {
                     const lastTempAlert = alertState[tempKey];
                     if (lastTempAlert && (now - lastTempAlert) < cooldownMs) {
                         const minsAgo = Math.round((now - lastTempAlert) / 60000);
-                        console.log(`${device.name}: ${tempStatus} suppressed (sent ${minsAgo}m ago)`);
+                        console.log(`${device.name}: ${effectiveStatus} suppressed (sent ${minsAgo}m ago)`);
                     } else {
-                        console.log(`${device.name}: ${tempStatus} at ${device.temperature.toFixed(1)}C — alerting`);
-                        await sendTelegram(buildTempAlertMessage(device, tempStatus));
+                        console.log(`${device.name}: ${effectiveStatus} at ${device.temperature.toFixed(1)}C — alerting`);
+                        await sendTelegram(buildTempAlertMessage(device, effectiveStatus));
                         alertState[tempKey] = now;
                         stateChanged = true;
                     }

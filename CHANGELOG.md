@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.0] - 2026-04-14
+
+### Added
+- Cold crash mode now suppresses low-temperature Telegram alerts server-side — toggling the Cold Crash button syncs state to Netlify Blobs via a new `cold-crash` function so `temp-monitor.js` can read it; high-temp alerts still fire as normal
+- On page load, cold crash state is fetched from the server and treated as authoritative (overrides stale localStorage)
+- New `netlify/functions/cold-crash.js` — GET returns current state, POST sets it
+
 ## [3.0.0] - 2026-04-14
 
 ### Fixed

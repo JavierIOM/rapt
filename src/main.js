@@ -87,6 +87,8 @@ function toggleColdCrashMode() {
     coldCrashMode = !coldCrashMode;
     localStorage.setItem('coldCrashMode', coldCrashMode);
     applyTheme();
+    // Sync to server so temp-monitor suppresses low-temp Telegram alerts
+    fetch(`/.netlify/functions/cold-crash?state=${coldCrashMode}`, { method: 'POST' }).catch(() => {});
     // Reload data to update temperature warnings
     loadData();
 }
@@ -692,3 +694,16 @@ modal.addEventListener('click', (e) => {
 
 // Load data on page load
 loadData();
+
+// Sync cold crash state from server on load (authoritative — overrides stale localStorage)
+fetch('/.netlify/functions/cold-crash')
+    .then(r => r.json())
+    .then(({ coldCrash }) => {
+        if (coldCrash !== coldCrashMode) {
+            coldCrashMode = coldCrash;
+            localStorage.setItem('coldCrashMode', coldCrashMode);
+            applyTheme();
+        }
+    })
+    .catch(() => {});
+

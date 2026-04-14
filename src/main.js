@@ -524,6 +524,7 @@ function displayDevices(hydrometers) {
         const displayName = escapeHtml(device.name || 'Unnamed Device');
         const displayId = escapeHtml(device.id);
         const displayFirmware = escapeHtml(device.firmwareVersion || 'Unknown');
+        const displayProfile = device.profileName ? escapeHtml(device.profileName) : null;
 
         const deviceCard = document.createElement('div');
         deviceCard.className = 'card';
@@ -538,6 +539,7 @@ function displayDevices(hydrometers) {
                     <div class="device-meta text-sm mt-1">
                         Firmware: ${displayFirmware}
                         ${device.isLatestFirmware === false ? '<span class="firmware-update">Update Available</span>' : ''}
+                        ${displayProfile ? `<span class="device-meta-sep">|</span> Current profile: ${displayProfile}` : ''}
                     </div>
                 </div>
                 <div class="text-right">

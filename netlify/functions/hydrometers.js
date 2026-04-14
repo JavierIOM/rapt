@@ -176,6 +176,8 @@ async function fetchProfileSession(sessionId) {
                         console.log('📊 Found profile session:');
                         console.log(JSON.stringify(session, null, 2));
                     }
+                    // Attach the profile name so the frontend can display it
+                    session._profileName = profile.name || session.name || null;
                     return session;
                 }
             }
@@ -249,6 +251,10 @@ async function fetchHydrometers() {
                     if (session && session.originalGravity) {
                         og = session.originalGravity;
                         console.log(`   Found OG in profile session: ${og} (${(og/1000).toFixed(3)})`);
+                    }
+                    if (session && session._profileName) {
+                        device.profileName = session._profileName;
+                        console.log(`   Profile name: ${device.profileName}`);
                     }
                     // Try common field names for session start date
                     if (session) {

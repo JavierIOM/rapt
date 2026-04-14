@@ -539,6 +539,11 @@ body.dark-mode .device-name {
   color: var(--text-tertiary);
 }
 
+.device-meta-sep {
+  opacity: 0.4;
+  margin: 0 0.35rem;
+}
+
 .firmware-update {
   color: #F56400;
   font-weight: 600;

@@ -9,6 +9,7 @@ dist/
 .env.local
 netlify-env-import.env
 public/raptzilla-source.png
+public/raptzilla-clean.png
 
 # Logs
 *.log

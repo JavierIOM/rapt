@@ -187,6 +187,25 @@ async function fetchProfileSession(sessionId) {
     }
 }
 
+// Detect the start of the current brew session from telemetry.
+// A new brew is indicated by a significant gravity increase (pill removed, cleaned, repitched).
+// Returns the index in the sorted-ascending array where the current session begins.
+function findCurrentSessionStart(telemetry) {
+    const sorted = [...telemetry].sort((a, b) => new Date(a.createdOn) - new Date(b.createdOn));
+    const GRAVITY_JUMP_THRESHOLD = 8; // points (e.g. 1.010 -> 1.060 = 50pt jump)
+    let sessionStartIndex = 0;
+
+    for (let i = 1; i < sorted.length; i++) {
+        const prev = sorted[i - 1].gravity;
+        const curr = sorted[i].gravity;
+        if (curr - prev >= GRAVITY_JUMP_THRESHOLD) {
+            sessionStartIndex = i;
+        }
+    }
+
+    return new Date(sorted[sessionStartIndex].createdOn);
+}
+
 // Fetch hydrometers data
 async function fetchHydrometers() {
     if (!isTokenValid()) {
@@ -215,21 +234,39 @@ async function fetchHydrometers() {
         for (let device of data) {
             console.log(`   Device: ${device.name || device.id}`);
 
-            const telemetry = await fetchTelemetry(device.id);
+            let telemetry = await fetchTelemetry(device.id);
             if (telemetry && telemetry.length > 0) {
                 device.telemetry = telemetry;
                 console.log(`   Enhanced telemetry points: ${telemetry.length}`);
 
                 let og = null;
 
+                let sessionStartDate = null;
+
                 if (device.activeProfileSession && device.activeProfileSession.id) {
-                    console.log(`   Fetching profile session for OG...`);
+                    console.log(`   Fetching profile session for OG and start date...`);
                     const session = await fetchProfileSession(device.activeProfileSession.id);
                     if (session && session.originalGravity) {
                         og = session.originalGravity;
                         console.log(`   Found OG in profile session: ${og} (${(og/1000).toFixed(3)})`);
                     }
+                    // Try common field names for session start date
+                    if (session) {
+                        const rawDate = session.startDate || session.createdOn || session.startedAt || session.startedOn || null;
+                        if (rawDate) {
+                            sessionStartDate = new Date(rawDate);
+                            console.log(`   Session start date from profile: ${sessionStartDate.toISOString()}`);
+                        }
+                    }
                 }
+
+                // Filter telemetry to current brew session only.
+                // Priority: profile session start date -> gravity-jump detection.
+                const cutoff = sessionStartDate || findCurrentSessionStart(telemetry);
+                console.log(`   Filtering telemetry to current session (cutoff: ${cutoff.toISOString()})`);
+                const sessionTelemetry = telemetry.filter(t => new Date(t.createdOn) >= cutoff);
+                console.log(`   Telemetry after session filter: ${sessionTelemetry.length} of ${telemetry.length} readings`);
+                telemetry = sessionTelemetry.length > 0 ? sessionTelemetry : telemetry;
 
                 if (!og && CONFIG.manualOriginalGravity) {
                     og = CONFIG.manualOriginalGravity;

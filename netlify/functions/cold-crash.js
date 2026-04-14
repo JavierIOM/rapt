@@ -49,8 +49,17 @@ exports.handler = async (event) => {
         }
     }
 
-    // POST — set state from query param or JSON body
+    // POST — requires Authorization: Bearer <COLD_CRASH_SECRET>
     if (event.httpMethod === 'POST') {
+        const secret = process.env.COLD_CRASH_SECRET;
+        if (secret) {
+            const authHeader = event.headers.authorization || event.headers.Authorization || '';
+            const provided = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+            if (provided !== secret) {
+                return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized' }) };
+            }
+        }
+
         let state;
 
         // Accept ?state=true/false as query param

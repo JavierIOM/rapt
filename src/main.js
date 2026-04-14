@@ -83,12 +83,43 @@ function toggleMonochromeMode() {
     applyTheme();
 }
 
-function toggleColdCrashMode() {
+function getColdCrashSecret() {
+    let secret = localStorage.getItem('coldCrashSecret');
+    if (!secret) {
+        secret = prompt('Enter the cold crash password:');
+        if (!secret) return null;
+        localStorage.setItem('coldCrashSecret', secret);
+    }
+    return secret;
+}
+
+async function toggleColdCrashMode() {
+    const secret = getColdCrashSecret();
+    if (!secret) return;
+
     coldCrashMode = !coldCrashMode;
     localStorage.setItem('coldCrashMode', coldCrashMode);
     applyTheme();
+
     // Sync to server so temp-monitor suppresses low-temp Telegram alerts
-    fetch(`/.netlify/functions/cold-crash?state=${coldCrashMode}`, { method: 'POST' }).catch(() => {});
+    try {
+        const res = await fetch(`/.netlify/functions/cold-crash?state=${coldCrashMode}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${secret}` }
+        });
+        if (res.status === 401) {
+            // Wrong password — revert and clear stored secret
+            coldCrashMode = !coldCrashMode;
+            localStorage.setItem('coldCrashMode', coldCrashMode);
+            localStorage.removeItem('coldCrashSecret');
+            applyTheme();
+            alert('Incorrect password. Try again.');
+            return;
+        }
+    } catch {
+        // Network error — still allow local toggle, server will catch up
+    }
+
     // Reload data to update temperature warnings
     loadData();
 }

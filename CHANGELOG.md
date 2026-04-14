@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.2.0] - 2026-04-14
+
+### Added
+- Cold crash endpoint now requires `Authorization: Bearer <COLD_CRASH_SECRET>` on POST requests — set `COLD_CRASH_SECRET` in Netlify env vars to enable; GET (read state) remains open
+- Frontend prompts for the password on first cold crash toggle and stores it in localStorage; wrong password reverts the toggle, clears the stored secret, and prompts again next time
+
 ## [3.1.0] - 2026-04-14
 
 ### Added

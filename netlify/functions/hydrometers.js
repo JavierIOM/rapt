@@ -265,12 +265,19 @@ async function fetchHydrometers() {
                         console.log(`   Found OG in profile session: ${og} (${(og/1000).toFixed(3)})`);
                     }
 
+                    // Target FG: same SG-to-RAPT normalisation
+                    if (aps.finalGravity) {
+                        device.targetFG = aps.finalGravity < 2.0 ? aps.finalGravity * 1000 : aps.finalGravity;
+                        console.log(`   Target FG from profile: ${device.targetFG} (${(device.targetFG/1000).toFixed(3)})`);
+                    }
+
                     // Start date is directly available
                     const rawDate = aps.startDate || aps.createdOn || aps.startedAt || aps.startedOn || null;
                     if (rawDate) {
                         const parsed = new Date(rawDate);
                         if (!isNaN(parsed.getTime())) {
                             sessionStartDate = parsed;
+                            device.sessionStartDate = parsed.toISOString();
                             console.log(`   Session start date from profile: ${sessionStartDate.toISOString()}`);
                         } else {
                             console.warn(`   Invalid session start date value: ${rawDate}`);
@@ -298,6 +305,9 @@ async function fetchHydrometers() {
                     og = sortedByDate[0].gravity;
                     console.log(`   Using first telemetry reading as OG: ${og} (${(og/1000).toFixed(3)})`);
                 }
+
+                // Expose OG on device for frontend calculations
+                device.og = og;
 
                 device.telemetry = telemetry.map((t, idx) => {
                     // Convert gravity values - RAPT appears to use format like 1063.4 for SG 1.0634

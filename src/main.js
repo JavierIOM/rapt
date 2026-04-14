@@ -559,6 +559,74 @@ function displayDevices(hydrometers) {
         const displayFirmware = escapeHtml(device.firmwareVersion || 'Unknown');
         const displayProfile = device.profileName ? escapeHtml(device.profileName) : null;
 
+        // Brew session stats
+        const ogSG   = device.og     ? device.og / 1000     : null;
+        const tFGSG  = device.targetFG ? device.targetFG / 1000 : null;
+        const curSG  = latestData ? latestData.gravity / 1000 : null;
+
+        // Brew day — "Day N" since session pitch
+        let brewDay = null;
+        if (device.sessionStartDate) {
+            const msElapsed = Date.now() - new Date(device.sessionStartDate).getTime();
+            brewDay = Math.floor(msElapsed / 86400000) + 1;
+        }
+
+        // Estimated final ABV from target FG
+        const estFinalABV = (ogSG && tFGSG) ? Math.max(0, (ogSG - tFGSG) * 131.25) : null;
+
+        // Fermentation progress % (OG → targetFG)
+        let progressPct = null;
+        if (ogSG && tFGSG && curSG && ogSG > tFGSG) {
+            progressPct = Math.min(100, Math.max(0, ((ogSG - curSG) / (ogSG - tFGSG)) * 100));
+        }
+
+        // ETA to target FG using gravity velocity (ppd in RAPT units)
+        let etaDays = null;
+        if (tFGSG && curSG && latestData && latestData.gravityVelocity != null) {
+            const vel = latestData.gravityVelocity; // RAPT units/day (negative = dropping)
+            const pointsRemaining = latestData.gravity - device.targetFG;
+            if (vel < 0 && pointsRemaining > 0 && Math.abs(vel) <= 100) {
+                etaDays = Math.ceil(pointsRemaining / Math.abs(vel));
+            }
+        }
+
+        // Progress bar HTML
+        const progressBar = (progressPct !== null) ? `
+            <div class="ferment-progress-wrap">
+                <div class="ferment-progress-labels">
+                    <span>OG ${ogSG.toFixed(3)}</span>
+                    <span class="ferment-label-center">${progressPct.toFixed(0)}% fermented</span>
+                    <span>Target ${tFGSG.toFixed(3)}</span>
+                </div>
+                <div class="ferment-progress-bar">
+                    <div class="ferment-progress-fill" style="width: ${progressPct.toFixed(1)}%"></div>
+                </div>
+            </div>` : '';
+
+        // Extra stat cards (brew day, target FG, est. final ABV, ETA)
+        const extraCards = [
+            brewDay !== null ? `
+                <div class="info-card">
+                    <div class="info-card-label mb-1 text-xs">Brew Day</div>
+                    <div class="info-card-value text-2xl">Day ${brewDay}</div>
+                </div>` : '',
+            tFGSG !== null ? `
+                <div class="info-card">
+                    <div class="info-card-label mb-1 text-xs">Target FG</div>
+                    <div class="info-card-value text-xl">${tFGSG.toFixed(3)}</div>
+                </div>` : '',
+            estFinalABV !== null ? `
+                <div class="info-card">
+                    <div class="info-card-label mb-1 text-xs">Est. Final ABV</div>
+                    <div class="info-card-value text-2xl">${estFinalABV.toFixed(2)}%</div>
+                </div>` : '',
+            etaDays !== null ? `
+                <div class="info-card">
+                    <div class="info-card-label mb-1 text-xs">ETA to FG</div>
+                    <div class="info-card-value text-2xl">${etaDays}d</div>
+                </div>` : '',
+        ].join('');
+
         const deviceCard = document.createElement('div');
         deviceCard.className = 'card';
         deviceCard.innerHTML = `
@@ -582,28 +650,32 @@ function displayDevices(hydrometers) {
             </div>
 
             ${latestData ? `
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
                     <div class="${tempClass}">
                         <div class="info-card-label mb-1 text-xs">Temperature</div>
                         <div class="info-card-value text-2xl">${latestData.temperature?.toFixed(1) || 'N/A'}°C</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card-label mb-1 text-xs">Gravity</div>
+                        <div class="info-card-value text-xl">${curSG ? curSG.toFixed(3) : 'N/A'}</div>
                     </div>
                     <div class="info-card">
                         <div class="info-card-label mb-1 text-xs">ABV</div>
                         <div class="info-card-value text-2xl">${latestData.abv?.toFixed(2) || 'N/A'}%</div>
                     </div>
                     <div class="info-card">
-                        <div class="info-card-label mb-1 text-xs">Gravity</div>
-                        <div class="info-card-value text-xl">${latestData.gravity?.toFixed(3) || 'N/A'}</div>
+                        <div class="info-card-label mb-1 text-xs">Attenuation</div>
+                        <div class="info-card-value text-2xl">${latestData.attenuation?.toFixed(1) || 'N/A'}%</div>
                     </div>
                     <div class="info-card">
                         <div class="info-card-label mb-1 text-xs">Gravity Velocity</div>
                         <div class="info-card-value text-lg">${latestData.gravityVelocity != null && Math.abs(latestData.gravityVelocity) <= 100 ? latestData.gravityVelocity.toFixed(2) : 'N/A'}<span class="text-sm"> ppd</span></div>
                     </div>
-                    <div class="info-card">
-                        <div class="info-card-label mb-1 text-xs">Attenuation</div>
-                        <div class="info-card-value text-2xl">${latestData.attenuation?.toFixed(1) || 'N/A'}%</div>
-                    </div>
                 </div>
+
+                ${extraCards ? `<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">${extraCards}</div>` : '<div class="mb-6"></div>'}
+
+                ${progressBar}
 
                 <div class="mb-4">
                     <label for="timeRange-${device.id}" class="block text-sm font-medium time-range-label mb-2">Time Range:</label>

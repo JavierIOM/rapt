@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.3.0] - 2026-04-14
+
+### Added
+- **Brew Day counter** — shows which day of fermentation you're on (e.g. "Day 3"), derived from profile session start date
+- **Target FG stat card** — displays the target final gravity set in the RAPT profile
+- **Estimated Final ABV** — calculated from OG and target FG, shown alongside current ABV
+- **ETA to FG** — days remaining to hit target gravity based on current gravity velocity; only shown when gravity is actively dropping
+- **Fermentation progress bar** — full-width bar from OG to target FG showing how far through fermentation you are, with % label
+- `device.og`, `device.targetFG`, `device.sessionStartDate` now exposed in API response for frontend use
+
+### Fixed
+- Gravity stat card now displays in SG format (e.g. 1.045) instead of raw RAPT units (e.g. 1045.120)
+
 ## [3.2.0] - 2026-04-14
 
 ### Added

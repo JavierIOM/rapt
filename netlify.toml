@@ -10,3 +10,6 @@
 
 [functions."temp-monitor"]
   schedule = "*/15 * * * *"
+
+[functions."daily-summary"]
+  schedule = "0 8 * * *"

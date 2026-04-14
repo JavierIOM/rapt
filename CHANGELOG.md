@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.7.0] - 2026-04-14
+
+### Added
+- Daily brew summary via Telegram at 08:00 UTC — current gravity (SG), OG, ABV, attenuation, gravity velocity, 24h avg/min/max temperature, battery, reading count
+- `netlify/functions/daily-summary.js` — scheduled Netlify Function (`0 8 * * *`)
+
 ## [2.6.0] - 2026-04-14
 
 ### Added

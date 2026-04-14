@@ -281,6 +281,11 @@ body.dark-mode .theme-toggle.active {
   pointer-events: none;
 }
 
+body:not(.dark-mode) .bubble {
+  background: radial-gradient(circle at 30% 30%, rgba(245, 100, 0, 0.08), rgba(167, 139, 250, 0.12));
+  box-shadow: inset 0 0 20px rgba(245, 100, 0, 0.06), 0 0 20px rgba(167, 139, 250, 0.15), 0 0 0 1px rgba(167, 139, 250, 0.1);
+}
+
 @keyframes float {
   0% {
     transform: translateY(0) translateX(0) scale(0);

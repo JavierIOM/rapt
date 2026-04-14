@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.9.0] - 2026-04-14
+
+### Fixed
+- Gravity velocity outlier values from the RAPT API (e.g. -209,000 ppd) no longer blow up the chart scale — values beyond ±100 ppd are treated as null/gap points
+- Gravity velocity stat card now shows N/A instead of displaying absurd outlier values
+
 ## [2.8.0] - 2026-04-14
 
 ### Fixed

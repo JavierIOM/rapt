@@ -221,7 +221,15 @@ function createChart(deviceId, telemetryData, timeRange = 24) {
     const temperatures = sortedData.map(d => d.temperature);
     const abv = sortedData.map(d => d.abv);
     const attenuation = sortedData.map(d => d.attenuation);
-    const gravityVelocity = sortedData.map(d => d.gravityVelocity || 0);
+    // Cap gravity velocity to a sane range — the RAPT API occasionally returns extreme
+    // outlier values (e.g. -200,000 ppd) which blow up the chart scale. Normal active
+    // fermentation is typically 0 to -30 ppd. Anything beyond ±100 is instrument noise.
+    const VELOCITY_MAX = 100;
+    const gravityVelocity = sortedData.map(d => {
+        const v = d.gravityVelocity;
+        if (v == null) return null;
+        return Math.abs(v) > VELOCITY_MAX ? null : v;
+    });
 
     // Create dynamic colors for attenuation based on completion (pink -> purple)
     const attenuationColors = sortedData.map(d => {
@@ -554,7 +562,7 @@ function displayDevices(hydrometers) {
                     </div>
                     <div class="info-card">
                         <div class="info-card-label mb-1 text-xs">Gravity Velocity</div>
-                        <div class="info-card-value text-lg">${latestData.gravityVelocity?.toFixed(2) || 'N/A'}<span class="text-sm"> ppd</span></div>
+                        <div class="info-card-value text-lg">${latestData.gravityVelocity != null && Math.abs(latestData.gravityVelocity) <= 100 ? latestData.gravityVelocity.toFixed(2) : 'N/A'}<span class="text-sm"> ppd</span></div>
                     </div>
                     <div class="info-card">
                         <div class="info-card-label mb-1 text-xs">Attenuation</div>

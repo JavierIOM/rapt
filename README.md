@@ -1,13 +1,18 @@
 # RAPT.io Dashboard
 
-Real-time fermentation monitoring dashboard for RAPT.io devices.
+Real-time fermentation monitoring dashboard for RAPT.io devices. Live at **[rapt.rockyroo.fish](https://rapt.rockyroo.fish)**.
+
+**Current version: v2.4.0**
 
 ## Features
 
 - Real-time temperature, gravity, ABV, and attenuation monitoring
-- Interactive charts with customizable time ranges
-- Dark mode and monochrome theme support
-- Low battery and high temperature warnings
+- Automatic session detection — old brew data is filtered out when a new session starts
+- Interactive charts with customisable time ranges (6h, 12h, 18h, 24h, 36h, all time)
+- Four themes: dark (default), light, monochrome, dark monochrome
+- Cold crash mode — suppresses low-temperature warnings during intentional crashing
+- Low battery and temperature alert banners
+- Configurable temperature warning/danger thresholds (persisted in localStorage)
 - Responsive design for mobile and desktop
 
 ## Deployment to Netlify
@@ -25,31 +30,34 @@ Real-time fermentation monitoring dashboard for RAPT.io devices.
    cd rapt
    ```
 
-2. **Connect to Netlify**
+2. **Install Dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Connect to Netlify**
    - Log in to your Netlify account
    - Click "Add new site" → "Import an existing project"
    - Connect to your GitHub repository
-   - Select this repository
 
-3. **Configure Build Settings**
+4. **Configure Build Settings**
    - Build command: `npm run build`
    - Publish directory: `dist`
    - Functions directory: `netlify/functions`
 
-4. **Add Environment Variables**
+5. **Add Environment Variables**
    Go to Site settings → Environment variables and add:
    - `RAPT_EMAIL`: Your RAPT.io account email
    - `RAPT_API_SECRET`: Your RAPT.io API secret
-   - `RAPT_MANUAL_OG` (optional): Manual Original Gravity (e.g., `1063.4`)
+   - `RAPT_MANUAL_OG` (optional): Manual Original Gravity e.g. `1047.0` — only needed if no active profile session
    - `TEMP_DANGER_MIN` (optional): Minimum safe temperature in °C (default: 18)
    - `TEMP_WARNING_MIN` (optional): Lower optimal temperature in °C (default: 20)
    - `TEMP_WARNING_MAX` (optional): Upper optimal temperature in °C (default: 26)
    - `TEMP_DANGER_MAX` (optional): Maximum safe temperature in °C (default: 28)
-   - `DEBUG` (optional): Enable verbose logging for troubleshooting (default: `false`, **NOT recommended for production**)
+   - `DEBUG` (optional): Set to `true` for verbose function logging — **NOT for production**
 
-5. **Deploy**
-   - Click "Deploy site"
-   - Netlify will automatically build and deploy your site
+6. **Deploy**
+   - Click "Deploy site" — Netlify builds and deploys automatically
 
 ### Local Development
 
@@ -79,74 +87,56 @@ Real-time fermentation monitoring dashboard for RAPT.io devices.
 
 ### Environment Variables
 
-- **RAPT_EMAIL** (required): Your RAPT.io account email
-- **RAPT_API_SECRET** (required): Your RAPT.io API secret/password
-- **RAPT_MANUAL_OG** (optional): Set a manual Original Gravity if the API doesn't provide it
-- **DEBUG** (optional): Enable verbose logging that exposes device data in function logs. Set to `true` only for local development/troubleshooting. **NOT recommended for production**. Default: `false`
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `RAPT_EMAIL` | Yes | — | RAPT.io account email |
+| `RAPT_API_SECRET` | Yes | — | RAPT.io password / API secret |
+| `RAPT_MANUAL_OG` | No | — | Manual Original Gravity (e.g. `1047.0`). Used only if no active profile session |
+| `TEMP_DANGER_MIN` | No | 18 | Below this = red danger |
+| `TEMP_WARNING_MIN` | No | 20 | Below this (above danger) = orange warning |
+| `TEMP_WARNING_MAX` | No | 26 | Above this (below danger) = orange warning |
+| `TEMP_DANGER_MAX` | No | 28 | Above this = red danger |
+| `DEBUG` | No | false | Verbose logging — development only |
+
+### Session Detection
+
+When a new brew starts, the dashboard automatically filters out all previous brew data. Detection priority:
+
+1. **Profile session start date** — if you have an active session in the RAPT app, the start date is used directly
+2. **Gravity jump detection** — if no profile session is active, the function scans telemetry for a gravity increase of ≥ 8 points (e.g. 1.010 → 1.060), indicating the Pill was repitched into a new brew
 
 ### Temperature Warnings
 
-The dashboard shows colored indicators for temperature based on configurable ranges:
+Default ranges:
+- **Green (Good)**: 20–26°C
+- **Orange (Warning)**: 18–20°C or 26–28°C
+- **Red (Danger)**: below 18°C or above 28°C
 
-**Default Temperature Ranges:**
-- **Green (Good)**: 20-26°C (optimal fermentation range)
-- **Orange (Warning)**: 18-20°C or 26-28°C (acceptable but caution advised)
-- **Red (Danger)**: Below 18°C or above 28°C (may harm fermentation)
+Customise via environment variables or the Settings panel in the UI (persisted per-browser in localStorage).
 
-**Custom Temperature Limits:**
-
-You can customize these ranges using environment variables to match your specific fermentation needs:
-
-- **TEMP_DANGER_MIN** (default: 18): Minimum safe temperature - below this shows red
-- **TEMP_WARNING_MIN** (default: 20): Lower optimal temperature - between danger and warning shows orange
-- **TEMP_WARNING_MAX** (default: 26): Upper optimal temperature - between warning min/max shows green
-- **TEMP_DANGER_MAX** (default: 28): Maximum safe temperature - above this shows red
-
-**Example:** For a lager fermentation (cooler temps), you might set:
-```
-TEMP_DANGER_MIN=8
-TEMP_WARNING_MIN=10
-TEMP_WARNING_MAX=13
-TEMP_DANGER_MAX=15
-```
+**Cold Crash Mode**: enable via the snowflake button (top-right) to suppress low-temperature warnings while intentionally dropping temperature to clarify your beer.
 
 ### Calculation Formulas
 
-The dashboard automatically calculates ABV and attenuation from gravity readings:
-
-**ABV (Alcohol by Volume):**
+**ABV:**
 ```
 ABV = (OG - FG) × 131.25
 ```
-Where OG = Original Gravity, FG = Final/Current Gravity
 
-This is the standard formula used in brewing. Example:
-- OG: 1.0634 (63.4 points)
-- FG: 1.0100 (10 points)
-- ABV: (1.0634 - 1.0100) × 131.25 = 7.01%
-
-**Attenuation (Apparent Attenuation):**
+**Attenuation:**
 ```
 Attenuation = ((OG - FG) / (OG - 1.000)) × 100
 ```
 
-This shows what percentage of available sugars have been consumed. Example:
-- OG: 1.0634, FG: 1.0100
-- Attenuation: ((1.0634 - 1.0100) / (1.0634 - 1.000)) × 100 = 84.2%
-
-**Data Sources:**
-- Original Gravity (OG) is obtained from:
-  1. Profile session data (if available)
-  2. Manual OG setting (`RAPT_MANUAL_OG` environment variable)
-  3. First telemetry reading (fallback)
-- Current/Final Gravity comes from each telemetry reading
+OG source priority: profile session → `RAPT_MANUAL_OG` env var → first telemetry reading of current session.
 
 ## Technology Stack
 
 - **Frontend**: Vanilla JavaScript, Vite
 - **Charts**: Chart.js
-- **Styling**: Tailwind CSS
-- **Backend**: Netlify Functions (serverless)
+- **Styling**: Tailwind CSS v3
+- **Backend**: Netlify Functions (Node.js, serverless)
+- **OG image**: sharp (generated at build time)
 - **Hosting**: Netlify
 
 ## License

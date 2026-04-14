@@ -7,7 +7,12 @@ let charts = {};
 function loadTempConfig() {
     const saved = localStorage.getItem('tempConfig');
     if (saved) {
-        return JSON.parse(saved);
+        try {
+            return JSON.parse(saved);
+        } catch (e) {
+            console.warn('Corrupt tempConfig in localStorage, resetting to defaults.');
+            localStorage.removeItem('tempConfig');
+        }
     }
     return {
         tempDangerMin: 18,
@@ -19,8 +24,8 @@ function loadTempConfig() {
 
 let tempConfig = loadTempConfig();
 
-// Theme management
-let darkMode = localStorage.getItem('darkMode') === 'true';
+// Theme management — dark is the default; only override if user has explicitly set a preference
+let darkMode = localStorage.getItem('darkMode') !== null ? localStorage.getItem('darkMode') === 'true' : true;
 let monochromeMode = localStorage.getItem('monochromeMode') === 'true';
 let coldCrashMode = localStorage.getItem('coldCrashMode') === 'true';
 
@@ -332,6 +337,7 @@ function createChart(deviceId, telemetryData, timeRange = 24) {
                 legend: {
                     position: 'top',
                     labels: {
+                        color: darkMode ? 'rgb(203, 213, 225)' : '#222222',
                         font: {
                             size: 14,
                             weight: '600'
@@ -342,6 +348,7 @@ function createChart(deviceId, telemetryData, timeRange = 24) {
                 title: {
                     display: true,
                     text: `Fermentation Metrics - ${timeRange === 'all' ? 'All Time' : `Last ${timeRange} Hours`} (${sortedData.length} readings)`,
+                    color: darkMode ? 'rgb(248, 250, 252)' : '#222222',
                     font: {
                         size: 16,
                         weight: '700'
@@ -354,25 +361,29 @@ function createChart(deviceId, telemetryData, timeRange = 24) {
                     type: 'linear',
                     display: true,
                     position: 'left',
+                    ticks: { color: darkMode ? 'rgb(148, 163, 184)' : '#595959' },
                     title: {
                         display: true,
                         text: 'Temperature (°C)',
+                        color: darkMode ? 'rgb(203, 213, 225)' : '#595959',
                         font: {
                             size: 14,
                             weight: '600'
                         }
                     },
                     grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
+                        color: darkMode ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.06)'
                     }
                 },
                 y1: {
                     type: 'linear',
                     display: true,
                     position: 'right',
+                    ticks: { color: darkMode ? 'rgb(148, 163, 184)' : '#595959' },
                     title: {
                         display: true,
                         text: 'ABV (%)',
+                        color: darkMode ? 'rgb(203, 213, 225)' : '#595959',
                         font: {
                             size: 14,
                             weight: '600'
@@ -386,9 +397,11 @@ function createChart(deviceId, telemetryData, timeRange = 24) {
                     type: 'linear',
                     display: true,
                     position: 'right',
+                    ticks: { color: darkMode ? 'rgb(148, 163, 184)' : '#595959' },
                     title: {
                         display: true,
                         text: 'Attenuation (%)',
+                        color: darkMode ? 'rgb(203, 213, 225)' : '#595959',
                         font: {
                             size: 14,
                             weight: '600'
@@ -403,9 +416,11 @@ function createChart(deviceId, telemetryData, timeRange = 24) {
                     type: 'linear',
                     display: true,
                     position: 'right',
+                    ticks: { color: darkMode ? 'rgb(148, 163, 184)' : '#595959' },
                     title: {
                         display: true,
                         text: 'Gravity Velocity (ppd)',
+                        color: darkMode ? 'rgb(203, 213, 225)' : '#595959',
                         font: {
                             size: 14,
                             weight: '600'
@@ -417,13 +432,25 @@ function createChart(deviceId, telemetryData, timeRange = 24) {
                     offset: true
                 },
                 x: {
+                    ticks: { color: darkMode ? 'rgb(148, 163, 184)' : '#595959' },
                     grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
+                        color: darkMode ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.06)'
                     }
                 }
             }
         }
     });
+}
+
+// Escape HTML to prevent XSS when injecting API strings into innerHTML
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 // Store device telemetry data globally for theme switching
@@ -447,28 +474,24 @@ function displayDevices(hydrometers) {
     });
 
     hydrometers.forEach(device => {
-        console.log('Processing device:', device.name, 'Telemetry count:', device.telemetry?.length);
-
         // Get the most recent telemetry data
         const latestData = device.telemetry && device.telemetry.length > 0
             ? device.telemetry.sort((a, b) => new Date(b.createdOn) - new Date(a.createdOn))[0]
             : null;
 
-        console.log('Latest data:', latestData);
-
         // Check for low battery (< 20%)
         const lowBattery = latestData && latestData.battery < 20;
         const batteryWarning = lowBattery
-            ? `<div class="alert alert-warning mb-4">⚠️ Low Battery Warning: ${latestData.battery.toFixed(0)}% - Please charge soon!</div>`
+            ? `<div class="alert alert-warning mb-4">Low Battery Warning: ${latestData.battery.toFixed(0)}% — Please charge soon</div>`
             : '';
 
         // Check for temperature warnings (ignore low temps in cold crash mode)
         const highTemp = latestData && latestData.temperature > tempConfig.tempDangerMax;
         const lowTemp = latestData && latestData.temperature < tempConfig.tempDangerMin && !coldCrashMode;
         const tempWarning = highTemp
-            ? `<div class="alert alert-danger mb-4">🌡️ High Temperature Warning: ${latestData.temperature.toFixed(1)}°C - Temperature exceeds ${tempConfig.tempDangerMax}°C!</div>`
+            ? `<div class="alert alert-danger mb-4">High Temperature Warning: ${latestData.temperature.toFixed(1)}°C — Temperature exceeds ${tempConfig.tempDangerMax}°C</div>`
             : lowTemp
-            ? `<div class="alert alert-danger mb-4">🌡️ Low Temperature Warning: ${latestData.temperature.toFixed(1)}°C - Temperature below ${tempConfig.tempDangerMin}°C!</div>`
+            ? `<div class="alert alert-danger mb-4">Low Temperature Warning: ${latestData.temperature.toFixed(1)}°C — Temperature below ${tempConfig.tempDangerMin}°C</div>`
             : '';
 
         // Determine temperature color class (ignore low temps in cold crash mode)
@@ -490,26 +513,28 @@ function displayDevices(hydrometers) {
             }
         }
 
-        const displayName = device.name || 'Unnamed Device';
+        const displayName = escapeHtml(device.name || 'Unnamed Device');
+        const displayId = escapeHtml(device.id);
+        const displayFirmware = escapeHtml(device.firmwareVersion || 'Unknown');
 
         const deviceCard = document.createElement('div');
         deviceCard.className = 'card';
         deviceCard.innerHTML = `
             ${batteryWarning}
             ${tempWarning}
-            <div class="flex justify-between items-center mb-6 pb-6 border-b-2 border-slate-100">
+            <div class="device-card-header flex justify-between items-center mb-6 pb-6">
                 <div>
-                    <h2 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                    <h2 class="device-name text-3xl font-bold">
                         ${displayName}
                     </h2>
-                    <div class="text-slate-500 text-sm mt-1">
-                        Firmware: ${device.firmwareVersion || 'Unknown'}
-                        ${device.isLatestFirmware === false ? '<span class="text-orange-500">⚠️ Update Available</span>' : ''}
+                    <div class="device-meta text-sm mt-1">
+                        Firmware: ${displayFirmware}
+                        ${device.isLatestFirmware === false ? '<span class="firmware-update">Update Available</span>' : ''}
                     </div>
                 </div>
                 <div class="text-right">
-                    <div class="text-slate-500 font-mono text-sm">ID: ${device.id}</div>
-                    ${latestData ? `<div class="text-slate-400 text-xs mt-1">Battery: ${latestData.battery?.toFixed(0) || 'N/A'}% | Signal: ${latestData.rssi || 'N/A'} dBm | ${formatTime(device.lastActivityTime)}</div>` : ''}
+                    <div class="device-id font-mono text-sm">ID: ${displayId}</div>
+                    ${latestData ? `<div class="device-stats text-xs mt-1">Battery: ${latestData.battery?.toFixed(0) || 'N/A'}% | Signal: ${latestData.rssi || 'N/A'} dBm | ${formatTime(device.lastActivityTime)}</div>` : ''}
                 </div>
             </div>
 
@@ -539,7 +564,7 @@ function displayDevices(hydrometers) {
 
                 <div class="mb-4">
                     <label for="timeRange-${device.id}" class="block text-sm font-medium time-range-label mb-2">Time Range:</label>
-                    <select id="timeRange-${device.id}" class="w-full md:w-64 px-4 py-2 border-2 border-slate-300 rounded-lg focus:outline-none focus:border-purple-500 bg-white font-medium">
+                    <select id="timeRange-${device.id}" class="time-range-select">
                         <option value="6">Last 6 Hours</option>
                         <option value="12">Last 12 Hours</option>
                         <option value="18">Last 18 Hours</option>
@@ -551,7 +576,7 @@ function displayDevices(hydrometers) {
                 <div class="relative h-96 mt-6">
                     <canvas id="chart-${device.id}"></canvas>
                 </div>
-            ` : '<p class="text-slate-500 text-center py-8">No telemetry data available</p>'}
+            ` : '<p class="device-meta text-center py-8">No telemetry data available</p>'}
         `;
 
         devicesContainer.appendChild(deviceCard);

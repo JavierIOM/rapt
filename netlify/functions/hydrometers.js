@@ -254,8 +254,13 @@ async function fetchHydrometers() {
                     if (session) {
                         const rawDate = session.startDate || session.createdOn || session.startedAt || session.startedOn || null;
                         if (rawDate) {
-                            sessionStartDate = new Date(rawDate);
-                            console.log(`   Session start date from profile: ${sessionStartDate.toISOString()}`);
+                            const parsed = new Date(rawDate);
+                            if (!isNaN(parsed.getTime())) {
+                                sessionStartDate = parsed;
+                                console.log(`   Session start date from profile: ${sessionStartDate.toISOString()}`);
+                            } else {
+                                console.warn(`   Invalid session start date value: ${rawDate}`);
+                            }
                         }
                     }
                 }
@@ -281,7 +286,7 @@ async function fetchHydrometers() {
                     console.log(`   Using first telemetry reading as OG: ${og} (${(og/1000).toFixed(3)})`);
                 }
 
-                device.telemetry = telemetry.map(t => {
+                device.telemetry = telemetry.map((t, idx) => {
                     // Convert gravity values - RAPT appears to use format like 1063.4 for SG 1.0634
                     const ogSG = og / 1000;
                     const fgSG = t.gravity / 1000;
@@ -294,7 +299,7 @@ async function fetchHydrometers() {
                     const attenuation = ((ogSG - fgSG) / (ogSG - 1.0)) * 100;
 
                     // Log first reading for verification
-                    if (device.telemetry.indexOf(t) === 0) {
+                    if (idx === 0) {
                         console.log(`   Sample calculation: OG=${ogSG.toFixed(4)}, FG=${fgSG.toFixed(4)}, ABV=${abv.toFixed(2)}%, Attenuation=${attenuation.toFixed(1)}%`);
                     }
 
@@ -321,7 +326,8 @@ exports.handler = async (event, context) => {
     const allowedOrigins = [
         'http://localhost:5173',  // Vite dev server
         'http://localhost:8888',  // Netlify dev
-        'https://rapt-dashboard.netlify.app',  // Production (update with actual Netlify domain)
+        'https://rapt-dashboard.netlify.app',  // Netlify deploy URL
+        'https://rapt.rockyroo.fish',  // Production custom domain
     ];
 
     const isAllowedOrigin = allowedOrigins.some(allowed => origin.startsWith(allowed));

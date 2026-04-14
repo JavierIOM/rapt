@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.10.0] - 2026-04-14
+
+### Fixed
+- Profile name (e.g. "Helles") now correctly displayed on device card — was never appearing because `fetchProfileSession()` wasn't finding it; name is now read directly from `device.activeProfileSession.name` which is already present on the GetHydrometers response
+- Critical OG unit bug: `activeProfileSession.originalGravity` is in SG format (e.g. 1.047) but was being divided by 1000 as if it were RAPT units, giving an absurd `ogSG` of 0.001047 and zeroing out all ABV/attenuation calculations — now normalised correctly (`< 2.0 → × 1000`)
+- Session start date now read directly from `activeProfileSession.startDate` instead of via a redundant second API call to `/api/Profiles/GetProfiles`
+- Removed unnecessary `fetchProfileSession()` call in the active-session branch — all needed data (name, OG, startDate) is already on `device.activeProfileSession`
+- Removed diagnostic logging for `activeProfileSession` keys/raw dump added in the previous session
+
 ## [2.9.0] - 2026-04-14
 
 ### Fixed

@@ -251,29 +251,29 @@ async function fetchHydrometers() {
                 let sessionStartDate = null;
 
                 if (device.activeProfileSession && device.activeProfileSession.id) {
-                    console.log(`   activeProfileSession keys: ${Object.keys(device.activeProfileSession).join(', ')}`);
-                    console.log(`   activeProfileSession raw: ${JSON.stringify(device.activeProfileSession)}`);
-                    console.log(`   Fetching profile session for OG and start date...`);
-                    const session = await fetchProfileSession(device.activeProfileSession.id);
-                    if (session && session.originalGravity) {
-                        og = session.originalGravity;
-                        console.log(`   Found OG in profile session: ${og} (${(og/1000).toFixed(3)})`);
-                    }
-                    if (session && session._profileName) {
-                        device.profileName = session._profileName;
+                    const aps = device.activeProfileSession;
+
+                    // Name is directly on the activeProfileSession object
+                    if (aps.name) {
+                        device.profileName = aps.name;
                         console.log(`   Profile name: ${device.profileName}`);
                     }
-                    // Try common field names for session start date
-                    if (session) {
-                        const rawDate = session.startDate || session.createdOn || session.startedAt || session.startedOn || null;
-                        if (rawDate) {
-                            const parsed = new Date(rawDate);
-                            if (!isNaN(parsed.getTime())) {
-                                sessionStartDate = parsed;
-                                console.log(`   Session start date from profile: ${sessionStartDate.toISOString()}`);
-                            } else {
-                                console.warn(`   Invalid session start date value: ${rawDate}`);
-                            }
+
+                    // OG: stored in SG format (e.g. 1.047), normalise to RAPT units (e.g. 1047.0)
+                    if (aps.originalGravity) {
+                        og = aps.originalGravity < 2.0 ? aps.originalGravity * 1000 : aps.originalGravity;
+                        console.log(`   Found OG in profile session: ${og} (${(og/1000).toFixed(3)})`);
+                    }
+
+                    // Start date is directly available
+                    const rawDate = aps.startDate || aps.createdOn || aps.startedAt || aps.startedOn || null;
+                    if (rawDate) {
+                        const parsed = new Date(rawDate);
+                        if (!isNaN(parsed.getTime())) {
+                            sessionStartDate = parsed;
+                            console.log(`   Session start date from profile: ${sessionStartDate.toISOString()}`);
+                        } else {
+                            console.warn(`   Invalid session start date value: ${rawDate}`);
                         }
                     }
                 }

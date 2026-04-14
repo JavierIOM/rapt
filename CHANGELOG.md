@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.6.0] - 2026-04-14
+
+### Added
+- Gravity stall detection — alerts via Telegram if gravity hasn't changed by more than 2 points over 48 hours
+- Stall alert message includes current gravity in SG format and a prompt to check if fermentation is complete or stuck
+- Stall alerts have independent cooldown (default 6 hours) via `STALL_COOLDOWN_MINUTES` env var
+- `GRAVITY_STALL_THRESHOLD` env var (optional, default 2 RAPT gravity units) to tune sensitivity
+- Telemetry fetch window extended from 2h to 49h to support stall detection
+
+### Changed
+- `getDeviceReadings` now returns full 49h telemetry array per device for stall analysis
+- Temperature and stall alert state tracked under separate keys for independent cooldown behaviour
+
 ## [2.5.0] - 2026-04-14
 
 ### Added

@@ -12,8 +12,12 @@ const CONFIG = {
     tempWarningMin: process.env.TEMP_WARNING_MIN ? parseFloat(process.env.TEMP_WARNING_MIN) : 20,
     tempWarningMax: process.env.TEMP_WARNING_MAX ? parseFloat(process.env.TEMP_WARNING_MAX) : 26,
     tempDangerMax: process.env.TEMP_DANGER_MAX ? parseFloat(process.env.TEMP_DANGER_MAX) : 28,
-    // Cooldown in minutes — don't re-alert for the same condition within this window
+    // Minimum gravity change (RAPT units) over 48h before a stall is declared
+    gravityStallThreshold: process.env.GRAVITY_STALL_THRESHOLD ? parseFloat(process.env.GRAVITY_STALL_THRESHOLD) : 2,
+    // Cooldown in minutes between repeat alerts for the same condition
     alertCooldownMinutes: process.env.ALERT_COOLDOWN_MINUTES ? parseInt(process.env.ALERT_COOLDOWN_MINUTES) : 60,
+    // Stall alerts repeat less frequently — default 6 hours
+    stallCooldownMinutes: process.env.STALL_COOLDOWN_MINUTES ? parseInt(process.env.STALL_COOLDOWN_MINUTES) : 360,
 };
 
 function makeRequest(url, options = {}) {
@@ -63,7 +67,7 @@ async function authenticate() {
     return data.access_token;
 }
 
-async function getLatestReadings(accessToken) {
+async function getDeviceReadings(accessToken) {
     const devices = await makeRequest(`${CONFIG.apiUrl}/Hydrometers/GetHydrometers`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' }
@@ -72,9 +76,9 @@ async function getLatestReadings(accessToken) {
     const readings = [];
 
     for (const device of devices) {
-        // Fetch just the last 2 hours of telemetry — we only need the latest reading
+        // Fetch 49h — enough to cover the 48h stall check with a small buffer
         const endDate = new Date();
-        const startDate = new Date(endDate.getTime() - (2 * 60 * 60 * 1000));
+        const startDate = new Date(endDate.getTime() - (49 * 60 * 60 * 1000));
         const url = `${CONFIG.apiUrl}/Hydrometers/GetTelemetry?hydrometerId=${device.id}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`;
 
         try {
@@ -84,13 +88,17 @@ async function getLatestReadings(accessToken) {
             });
 
             if (telemetry && telemetry.length > 0) {
-                const latest = telemetry.sort((a, b) => new Date(b.createdOn) - new Date(a.createdOn))[0];
+                const sorted = [...telemetry].sort((a, b) => new Date(b.createdOn) - new Date(a.createdOn));
+                const latest = sorted[0];
+
                 readings.push({
                     id: device.id,
                     name: device.name || 'Unnamed Device',
                     temperature: latest.temperature,
+                    gravity: latest.gravity,
                     battery: latest.battery,
-                    timestamp: latest.createdOn
+                    timestamp: latest.createdOn,
+                    telemetry: sorted  // full 49h sorted newest-first, for stall check
                 });
             }
         } catch (err) {
@@ -117,39 +125,76 @@ async function sendTelegram(message) {
 }
 
 function getTempStatus(temp) {
-    if (temp > CONFIG.tempDangerMax) return 'danger-high';
-    if (temp < CONFIG.tempDangerMin) return 'danger-low';
+    if (temp > CONFIG.tempDangerMax)  return 'danger-high';
+    if (temp < CONFIG.tempDangerMin)  return 'danger-low';
     if (temp > CONFIG.tempWarningMax) return 'warning-high';
     if (temp < CONFIG.tempWarningMin) return 'warning-low';
     return 'ok';
 }
 
-function buildAlertMessage(device, status) {
+// Returns true if gravity hasn't moved enough over 48h to indicate active fermentation.
+// Requires at least 48h of data to be present — skips the check if the brew is younger than that.
+function isGravityStalled(telemetry) {
+    if (!telemetry || telemetry.length < 2) return false;
+
+    const now = new Date();
+    const cutoff48h = new Date(now.getTime() - (48 * 60 * 60 * 1000));
+
+    // Find readings from ~48h ago (oldest reading that's at least 48h old)
+    const oldReadings = telemetry.filter(t => new Date(t.createdOn) <= cutoff48h);
+    if (oldReadings.length === 0) {
+        // Less than 48h of data — brew too young to call a stall
+        return false;
+    }
+
+    // Oldest reading within our 48h window
+    const oldest = oldReadings.sort((a, b) => new Date(a.createdOn) - new Date(b.createdOn))[0];
+    // Most recent reading
+    const newest = telemetry[0]; // already sorted newest-first
+
+    const gravityChange = Math.abs(newest.gravity - oldest.gravity);
+    console.log(`Gravity stall check: oldest=${oldest.gravity} (${oldest.createdOn}), newest=${newest.gravity}, change=${gravityChange.toFixed(1)}, threshold=${CONFIG.gravityStallThreshold}`);
+
+    return gravityChange < CONFIG.gravityStallThreshold;
+}
+
+function buildTempAlertMessage(device, status) {
     const statusLabels = {
-        'danger-high': `DANGER - Temperature too high`,
-        'danger-low':  `DANGER - Temperature too low`,
-        'warning-high': `Warning - Temperature running high`,
-        'warning-low':  `Warning - Temperature running low`,
+        'danger-high':  'DANGER - Temperature too high',
+        'danger-low':   'DANGER - Temperature too low',
+        'warning-high': 'Warning - Temperature running high',
+        'warning-low':  'Warning - Temperature running low',
     };
 
     const lines = [
         `<b>RAPT Alert - ${device.name}</b>`,
         ``,
         `${statusLabels[status]}: <b>${device.temperature.toFixed(1)}C</b>`,
+        (status === 'danger-high' || status === 'warning-high')
+            ? `Safe max: ${CONFIG.tempDangerMax}C`
+            : `Safe min: ${CONFIG.tempDangerMin}C`,
     ];
 
-    if (status === 'danger-high' || status === 'warning-high') {
-        lines.push(`Safe max: ${CONFIG.tempDangerMax}C`);
-    } else {
-        lines.push(`Safe min: ${CONFIG.tempDangerMin}C`);
-    }
+    if (device.battery != null) lines.push(`Battery: ${device.battery.toFixed(0)}%`);
+    lines.push(``, `<a href="https://rapt.rockyroo.fish">View Dashboard</a>`);
 
-    if (device.battery !== null && device.battery !== undefined) {
-        lines.push(`Battery: ${device.battery.toFixed(0)}%`);
-    }
+    return lines.join('\n');
+}
 
-    lines.push(``);
-    lines.push(`<a href="https://rapt.rockyroo.fish">View Dashboard</a>`);
+function buildStallAlertMessage(device) {
+    const gravityPoints = (device.gravity / 1000).toFixed(3);
+    const lines = [
+        `<b>RAPT Alert - ${device.name}</b>`,
+        ``,
+        `Gravity unchanged for 48+ hours`,
+        `Current gravity: <b>${gravityPoints}</b>`,
+        ``,
+        `Fermentation may be complete or stalled.`,
+        `Check your brew and confirm it has reached terminal gravity.`,
+    ];
+
+    if (device.battery != null) lines.push(`Battery: ${device.battery.toFixed(0)}%`);
+    lines.push(``, `<a href="https://rapt.rockyroo.fish">View Dashboard</a>`);
 
     return lines.join('\n');
 }
@@ -170,14 +215,14 @@ exports.handler = async (event) => {
 
     try {
         const accessToken = await authenticate();
-        const readings = await getLatestReadings(accessToken);
+        const devices = await getDeviceReadings(accessToken);
 
-        if (readings.length === 0) {
+        if (devices.length === 0) {
             console.log('No device readings available');
             return { statusCode: 200, body: 'No readings' };
         }
 
-        // Load alert state from Netlify Blobs to enforce cooldown
+        // Load alert state from Netlify Blobs to enforce cooldowns
         let alertState = {};
         try {
             const { getStore } = require('@netlify/blobs');
@@ -185,40 +230,63 @@ exports.handler = async (event) => {
             const saved = await store.get('alert-state', { type: 'json' });
             if (saved) alertState = saved;
         } catch (e) {
-            // Blobs not available (e.g. local dev) — proceed without cooldown
             console.log('Blobs unavailable, skipping cooldown state:', e.message);
         }
 
         const now = Date.now();
         const cooldownMs = CONFIG.alertCooldownMinutes * 60 * 1000;
+        const stallCooldownMs = CONFIG.stallCooldownMinutes * 60 * 1000;
         let stateChanged = false;
 
-        for (const device of readings) {
-            const status = getTempStatus(device.temperature);
-            const stateKey = `${device.id}-${status}`;
+        for (const device of devices) {
 
-            if (status === 'ok') {
-                // Clear any stored alert state for this device so it re-alerts if it goes bad again
-                if (alertState[device.id]) {
-                    delete alertState[device.id];
+            // --- Temperature check ---
+            const tempStatus = getTempStatus(device.temperature);
+            const tempKey = `${device.id}-temp-${tempStatus}`;
+
+            if (tempStatus === 'ok') {
+                // Clear temp alert state so it re-alerts if it goes bad again later
+                const tempKeys = Object.keys(alertState).filter(k => k.startsWith(`${device.id}-temp-`));
+                if (tempKeys.length > 0) {
+                    tempKeys.forEach(k => delete alertState[k]);
                     stateChanged = true;
                 }
-                console.log(`${device.name}: ${device.temperature.toFixed(1)}C - OK`);
-                continue;
+                console.log(`${device.name}: temp ${device.temperature.toFixed(1)}C - OK`);
+            } else {
+                const lastTempAlert = alertState[tempKey];
+                if (lastTempAlert && (now - lastTempAlert) < cooldownMs) {
+                    const minsAgo = Math.round((now - lastTempAlert) / 60000);
+                    console.log(`${device.name}: ${tempStatus} suppressed (sent ${minsAgo}m ago)`);
+                } else {
+                    console.log(`${device.name}: ${tempStatus} at ${device.temperature.toFixed(1)}C — alerting`);
+                    await sendTelegram(buildTempAlertMessage(device, tempStatus));
+                    alertState[tempKey] = now;
+                    stateChanged = true;
+                }
             }
 
-            // Check cooldown — only alert if we haven't sent this exact status recently
-            const lastAlert = alertState[stateKey];
-            if (lastAlert && (now - lastAlert) < cooldownMs) {
-                const minsAgo = Math.round((now - lastAlert) / 60000);
-                console.log(`${device.name}: ${status} alert suppressed (sent ${minsAgo}m ago, cooldown ${CONFIG.alertCooldownMinutes}m)`);
-                continue;
-            }
+            // --- Gravity stall check ---
+            const stallKey = `${device.id}-stall`;
+            const stalled = isGravityStalled(device.telemetry);
 
-            console.log(`${device.name}: ${status} at ${device.temperature.toFixed(1)}C — sending alert`);
-            await sendTelegram(buildAlertMessage(device, status));
-            alertState[stateKey] = now;
-            stateChanged = true;
+            if (!stalled) {
+                if (alertState[stallKey]) {
+                    delete alertState[stallKey];
+                    stateChanged = true;
+                }
+                console.log(`${device.name}: gravity active - no stall`);
+            } else {
+                const lastStallAlert = alertState[stallKey];
+                if (lastStallAlert && (now - lastStallAlert) < stallCooldownMs) {
+                    const hoursAgo = ((now - lastStallAlert) / 3600000).toFixed(1);
+                    console.log(`${device.name}: stall alert suppressed (sent ${hoursAgo}h ago)`);
+                } else {
+                    console.log(`${device.name}: gravity stalled — alerting`);
+                    await sendTelegram(buildStallAlertMessage(device));
+                    alertState[stallKey] = now;
+                    stateChanged = true;
+                }
+            }
         }
 
         // Persist updated alert state
@@ -232,11 +300,10 @@ exports.handler = async (event) => {
             }
         }
 
-        return { statusCode: 200, body: `Checked ${readings.length} device(s)` };
+        return { statusCode: 200, body: `Checked ${devices.length} device(s)` };
 
     } catch (err) {
         console.error('temp-monitor error:', err.message);
-        // Alert via Telegram if the monitor itself errors
         try {
             await sendTelegram(`<b>RAPT Monitor Error</b>\n\nCould not fetch fermentation data:\n<code>${err.message}</code>`);
         } catch (_) {}

@@ -122,8 +122,6 @@ function buildSummary(device, telemetry24h, og) {
         `  Battery: ${latest.battery != null ? latest.battery.toFixed(0) + '%' : 'N/A'}`,
         `  Readings today: ${sorted.length}`,
         `  Days data: ${daysSinceFirst}`,
-        ``,
-        `<a href="https://rapt.rockyroo.fish">View Dashboard</a>`,
     ].filter(l => l !== null);
 
     return lines.join('\n');

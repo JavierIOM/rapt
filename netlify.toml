@@ -12,4 +12,4 @@
   schedule = "*/15 * * * *"
 
 [functions."daily-summary"]
-  schedule = "0 8 * * *"
+  schedule = "30 7,19 * * *"

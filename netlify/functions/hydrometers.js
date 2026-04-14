@@ -251,6 +251,8 @@ async function fetchHydrometers() {
                 let sessionStartDate = null;
 
                 if (device.activeProfileSession && device.activeProfileSession.id) {
+                    console.log(`   activeProfileSession keys: ${Object.keys(device.activeProfileSession).join(', ')}`);
+                    console.log(`   activeProfileSession raw: ${JSON.stringify(device.activeProfileSession)}`);
                     console.log(`   Fetching profile session for OG and start date...`);
                     const session = await fetchProfileSession(device.activeProfileSession.id);
                     if (session && session.originalGravity) {

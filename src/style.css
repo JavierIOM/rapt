@@ -547,6 +547,9 @@ body.dark-mode .device-name {
 /* Fermentation progress bar */
 .ferment-progress-wrap {
   margin-bottom: 1.25rem;
+  background: var(--card-gradient-from);
+  border-radius: 0.75rem;
+  padding: 0.85rem 1.25rem;
 }
 
 .ferment-progress-labels {

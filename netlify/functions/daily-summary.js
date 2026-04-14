@@ -49,7 +49,7 @@ async function authenticate() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'Content-Length': params.toString().length
+            'Content-Length': Buffer.byteLength(params.toString())
         },
         body: params.toString()
     });
@@ -77,17 +77,18 @@ function buildSummary(device, telemetry24h, og) {
     const sorted = [...telemetry24h].sort((a, b) => new Date(a.createdOn) - new Date(b.createdOn));
     const latest = sorted[sorted.length - 1];
 
-    // Temperature stats over last 24h
-    const temps = sorted.map(t => t.temperature);
-    const avgTemp = temps.reduce((a, b) => a + b, 0) / temps.length;
-    const minTemp = Math.min(...temps);
-    const maxTemp = Math.max(...temps);
+    // Temperature stats over last 24h (exclude null readings to avoid skewed stats)
+    const temps = sorted.map(t => t.temperature).filter(t => t != null);
+    const avgTemp = temps.length > 0 ? temps.reduce((a, b) => a + b, 0) / temps.length : null;
+    const minTemp = temps.length > 0 ? Math.min(...temps) : null;
+    const maxTemp = temps.length > 0 ? Math.max(...temps) : null;
 
     // ABV and attenuation from latest reading
     const ogSG = og / 1000;
     const fgSG = latest.gravity / 1000;
     const abv = Math.max(0, (ogSG - fgSG) * 131.25);
-    const attenuation = Math.max(0, Math.min(100, ((ogSG - fgSG) / (ogSG - 1.0)) * 100));
+    const attenuationRaw = ogSG > 1.0 ? ((ogSG - fgSG) / (ogSG - 1.0)) * 100 : null;
+    const attenuation = attenuationRaw != null ? Math.max(0, Math.min(100, attenuationRaw)) : null;
 
     // Gravity velocity from latest reading (already in telemetry if available)
     const gravVelocity = latest.gravityVelocity != null ? latest.gravityVelocity : null;
@@ -97,7 +98,9 @@ function buildSummary(device, telemetry24h, og) {
     const daysSinceFirst = ((new Date(latest.createdOn) - new Date(firstReading.createdOn)) / 86400000).toFixed(1);
 
     // Temperature status
-    const tempStatus = maxTemp > CONFIG.tempDangerMax
+    const tempStatus = maxTemp == null
+        ? 'No data'
+        : maxTemp > CONFIG.tempDangerMax
         ? 'Above safe max!'
         : minTemp < CONFIG.tempDangerMin
         ? 'Below safe min!'
@@ -109,13 +112,15 @@ function buildSummary(device, telemetry24h, og) {
         `<b>Gravity</b>`,
         `  Current: <b>${fgSG.toFixed(3)}</b>  (OG: ${ogSG.toFixed(3)})`,
         `  ABV: <b>${abv.toFixed(2)}%</b>`,
-        `  Attenuation: <b>${attenuation.toFixed(1)}%</b>`,
+        attenuation != null ? `  Attenuation: <b>${attenuation.toFixed(1)}%</b>` : null,
         gravVelocity != null
             ? `  Gravity velocity: ${gravVelocity.toFixed(2)} ppd`
             : null,
         ``,
         `<b>Temperature (last 24h)</b>`,
-        `  Avg: <b>${avgTemp.toFixed(1)}C</b>   Min: ${minTemp.toFixed(1)}C   Max: ${maxTemp.toFixed(1)}C`,
+        avgTemp != null
+            ? `  Avg: <b>${avgTemp.toFixed(1)}C</b>   Min: ${minTemp.toFixed(1)}C   Max: ${maxTemp.toFixed(1)}C`
+            : `  Avg: N/A   Min: N/A   Max: N/A`,
         `  Status: ${tempStatus}`,
         ``,
         `<b>Device</b>`,
@@ -127,7 +132,7 @@ function buildSummary(device, telemetry24h, og) {
     return lines.join('\n');
 }
 
-// Netlify scheduled function — runs daily at 08:00 UTC
+// Netlify scheduled function — runs daily at 07:30 and 19:30 UTC
 exports.handler = async (event) => {
     console.log('daily-summary: running');
 

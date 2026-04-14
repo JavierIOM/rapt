@@ -73,7 +73,7 @@ async function authenticate() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'Content-Length': params.toString().length
+                'Content-Length': Buffer.byteLength(params.toString())
             },
             body: params.toString()
         });

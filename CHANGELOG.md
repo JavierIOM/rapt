@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.8.0] - 2026-04-14
+
+### Fixed
+- `temp-monitor.js`: null temperature no longer crashes the device loop — `device.temperature == null` is now guarded, logs a skip and continues cleanly
+- `daily-summary.js`: attenuation no longer outputs `NaN%` when OG equals current gravity (division by zero) — guarded with `ogSG > 1.0` check, omits line if invalid
+- `daily-summary.js`: null temperature readings no longer corrupt 24h avg/min/max stats or trigger false "Below safe min" status — nulls filtered before stats calculation
+- `Content-Length` header now uses `Buffer.byteLength()` instead of `.length` across all three functions — correct for non-ASCII characters in credentials
+- `.gitignore` updated to exclude entire `.claude/` folder rather than just `settings.local.json`
+- Stale "08:00 UTC" schedule comment in `daily-summary.js` corrected to "07:30 and 19:30 UTC"
+
 ## [2.7.0] - 2026-04-14
 
 ### Added

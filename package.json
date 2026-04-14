@@ -1,6 +1,6 @@
 {
   "name": "rapt-dashboard",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "description": "RAPT.io Dashboard - Real-time fermentation monitoring",
   "scripts": {
     "dev": "vite",

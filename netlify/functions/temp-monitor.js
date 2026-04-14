@@ -59,7 +59,7 @@ async function authenticate() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'Content-Length': params.toString().length
+            'Content-Length': Buffer.byteLength(params.toString())
         },
         body: params.toString()
     });
@@ -241,27 +241,31 @@ exports.handler = async (event) => {
         for (const device of devices) {
 
             // --- Temperature check ---
-            const tempStatus = getTempStatus(device.temperature);
-            const tempKey = `${device.id}-temp-${tempStatus}`;
-
-            if (tempStatus === 'ok') {
-                // Clear temp alert state so it re-alerts if it goes bad again later
-                const tempKeys = Object.keys(alertState).filter(k => k.startsWith(`${device.id}-temp-`));
-                if (tempKeys.length > 0) {
-                    tempKeys.forEach(k => delete alertState[k]);
-                    stateChanged = true;
-                }
-                console.log(`${device.name}: temp ${device.temperature.toFixed(1)}C - OK`);
+            if (device.temperature == null) {
+                console.log(`${device.name}: temperature is null — skipping temp check`);
             } else {
-                const lastTempAlert = alertState[tempKey];
-                if (lastTempAlert && (now - lastTempAlert) < cooldownMs) {
-                    const minsAgo = Math.round((now - lastTempAlert) / 60000);
-                    console.log(`${device.name}: ${tempStatus} suppressed (sent ${minsAgo}m ago)`);
+                const tempStatus = getTempStatus(device.temperature);
+                const tempKey = `${device.id}-temp-${tempStatus}`;
+
+                if (tempStatus === 'ok') {
+                    // Clear temp alert state so it re-alerts if it goes bad again later
+                    const tempKeys = Object.keys(alertState).filter(k => k.startsWith(`${device.id}-temp-`));
+                    if (tempKeys.length > 0) {
+                        tempKeys.forEach(k => delete alertState[k]);
+                        stateChanged = true;
+                    }
+                    console.log(`${device.name}: temp ${device.temperature.toFixed(1)}C - OK`);
                 } else {
-                    console.log(`${device.name}: ${tempStatus} at ${device.temperature.toFixed(1)}C — alerting`);
-                    await sendTelegram(buildTempAlertMessage(device, tempStatus));
-                    alertState[tempKey] = now;
-                    stateChanged = true;
+                    const lastTempAlert = alertState[tempKey];
+                    if (lastTempAlert && (now - lastTempAlert) < cooldownMs) {
+                        const minsAgo = Math.round((now - lastTempAlert) / 60000);
+                        console.log(`${device.name}: ${tempStatus} suppressed (sent ${minsAgo}m ago)`);
+                    } else {
+                        console.log(`${device.name}: ${tempStatus} at ${device.temperature.toFixed(1)}C — alerting`);
+                        await sendTelegram(buildTempAlertMessage(device, tempStatus));
+                        alertState[tempKey] = now;
+                        stateChanged = true;
+                    }
                 }
             }
 

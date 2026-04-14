@@ -167,7 +167,7 @@ function buildTempAlertMessage(device, status) {
     };
 
     const lines = [
-        `<b>RAPT Alert - ${device.name}</b>`,
+        `<b>Raptzilla Alert - ${device.name}</b>`,
         ``,
         `${statusLabels[status]}: <b>${device.temperature.toFixed(1)}C</b>`,
         (status === 'danger-high' || status === 'warning-high')
@@ -184,7 +184,7 @@ function buildTempAlertMessage(device, status) {
 function buildStallAlertMessage(device) {
     const gravityPoints = (device.gravity / 1000).toFixed(3);
     const lines = [
-        `<b>RAPT Alert - ${device.name}</b>`,
+        `<b>Raptzilla Alert - ${device.name}</b>`,
         ``,
         `Gravity unchanged for 48+ hours`,
         `Current gravity: <b>${gravityPoints}</b>`,
@@ -309,7 +309,7 @@ exports.handler = async (event) => {
     } catch (err) {
         console.error('temp-monitor error:', err.message);
         try {
-            await sendTelegram(`<b>RAPT Monitor Error</b>\n\nCould not fetch fermentation data:\n<code>${err.message}</code>`);
+            await sendTelegram(`<b>Raptzilla Monitor Error</b>\n\nCould not fetch fermentation data:\n<code>${err.message}</code>`);
         } catch (_) {}
         return { statusCode: 500, body: err.message };
     }

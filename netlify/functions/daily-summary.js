@@ -107,7 +107,7 @@ function buildSummary(device, telemetry24h, og) {
         : 'Within range';
 
     const lines = [
-        `<b>RAPT Daily Summary - ${device.name}</b>`,
+        `<b>Raptzilla Daily Summary - ${device.name}</b>`,
         ``,
         `<b>Gravity</b>`,
         `  Current: <b>${fgSG.toFixed(3)}</b>  (OG: ${ogSG.toFixed(3)})`,
@@ -161,7 +161,7 @@ exports.handler = async (event) => {
             });
 
             if (!telemetry || telemetry.length === 0) {
-                await sendTelegram(`<b>RAPT Daily Summary - ${device.name || device.id}</b>\n\nNo telemetry data in the last 24 hours.`);
+                await sendTelegram(`<b>Raptzilla Daily Summary - ${device.name || device.id}</b>\n\nNo telemetry data in the last 24 hours.`);
                 continue;
             }
 
@@ -202,7 +202,7 @@ exports.handler = async (event) => {
     } catch (err) {
         console.error('daily-summary error:', err.message);
         try {
-            await sendTelegram(`<b>RAPT Summary Error</b>\n\nCould not generate daily summary:\n<code>${err.message}</code>`);
+            await sendTelegram(`<b>Raptzilla Summary Error</b>\n\nCould not generate daily summary:\n<code>${err.message}</code>`);
         } catch (_) {}
         return { statusCode: 500, body: err.message };
     }

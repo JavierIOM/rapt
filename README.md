@@ -1,4 +1,4 @@
-# RAPT.io Dashboard
+# Raptzilla Dashboard
 
 Real-time fermentation monitoring dashboard for RAPT.io devices. Live at **[rapt.rockyroo.fish](https://rapt.rockyroo.fish)**.
 

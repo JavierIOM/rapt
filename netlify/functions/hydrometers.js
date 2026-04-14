@@ -176,8 +176,13 @@ async function fetchProfileSession(sessionId) {
                         console.log('📊 Found profile session:');
                         console.log(JSON.stringify(session, null, 2));
                     }
+                    // Log profile/session keys always so we can identify the name field
+                    console.log(`   Profile keys: ${Object.keys(profile).join(', ')}`);
+                    console.log(`   Session keys: ${Object.keys(session).join(', ')}`);
+                    console.log(`   Profile name candidates: name=${profile.name} title=${profile.title} profileName=${profile.profileName}`);
+                    console.log(`   Session name candidates: name=${session.name} title=${session.title} label=${session.label}`);
                     // Attach the profile name so the frontend can display it
-                    session._profileName = profile.name || session.name || null;
+                    session._profileName = profile.name || profile.title || profile.profileName || session.name || session.title || session.label || null;
                     return session;
                 }
             }

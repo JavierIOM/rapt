@@ -673,20 +673,22 @@ function displayDevices(hydrometers) {
 
                 ${progressBar}
 
-                <div class="mb-4">
-                    <label for="timeRange-${device.id}" class="block text-sm font-medium time-range-label mb-2">Time Range:</label>
-                    <select id="timeRange-${device.id}" class="time-range-select">
-                        <option value="3">Last 3 Hours</option>
-                        <option value="6" selected>Last 6 Hours</option>
-                        <option value="12">Last 12 Hours</option>
-                        <option value="18">Last 18 Hours</option>
-                        <option value="24">Last 24 Hours</option>
-                        <option value="36">Last 36 Hours</option>
-                        <option value="all">All Time</option>
-                    </select>
-                </div>
-                <div class="relative h-96 mt-6">
-                    <canvas id="chart-${device.id}"></canvas>
+                <div class="hidden md:block">
+                    <div class="mb-4">
+                        <label for="timeRange-${device.id}" class="block text-sm font-medium time-range-label mb-2">Time Range:</label>
+                        <select id="timeRange-${device.id}" class="time-range-select">
+                            <option value="3">Last 3 Hours</option>
+                            <option value="6" selected>Last 6 Hours</option>
+                            <option value="12">Last 12 Hours</option>
+                            <option value="18">Last 18 Hours</option>
+                            <option value="24">Last 24 Hours</option>
+                            <option value="36">Last 36 Hours</option>
+                            <option value="all">All Time</option>
+                        </select>
+                    </div>
+                    <div class="relative h-96 mt-6">
+                        <canvas id="chart-${device.id}"></canvas>
+                    </div>
                 </div>
             ` : '<p class="device-meta text-center py-8">No telemetry data available</p>'}
         `;

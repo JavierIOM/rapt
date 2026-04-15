@@ -661,7 +661,7 @@ body.dark-mode .firmware-update {
 
 /* In dark mode the gradient title reads well; in light mode use the accent */
 body.dark-mode .site-title {
-  background: linear-gradient(to right, rgb(167, 139, 250), rgb(244, 114, 182), rgb(129, 140, 248));
+  background: linear-gradient(to right, #1a6b2e, #4ade80, #166534, #86efac, #15803d);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

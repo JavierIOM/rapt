@@ -793,8 +793,9 @@ modal.addEventListener('click', (e) => {
     }
 });
 
-// Load data on page load
+// Load data on page load, then auto-refresh every 15 minutes
 loadData();
+setInterval(loadData, 15 * 60 * 1000);
 
 // Sync cold crash state on load.
 // If the user has never explicitly set cold crash (no localStorage key), treat as false

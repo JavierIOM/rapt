@@ -122,6 +122,22 @@ Default ranges (customisable via env vars or Settings panel):
 
 Requires `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` to be set.
 
+#### Setting up your Telegram bot
+
+1. Open Telegram and search for **[@BotFather](https://t.me/botfather)**
+2. Send `/newbot` and follow the prompts to name your bot
+3. BotFather will give you a token — this is your `TELEGRAM_BOT_TOKEN`
+4. Start a conversation with your new bot (search for it by name and hit Start)
+5. To find your `TELEGRAM_CHAT_ID`, visit this URL in your browser (replace `<TOKEN>` with your token):
+   ```
+   https://api.telegram.org/bot<TOKEN>/getUpdates
+   ```
+   Send your bot a message first, then look for `"chat":{"id":` in the response — that number is your `TELEGRAM_CHAT_ID`
+
+Add both values to your Netlify environment variables and the alerts will start working on the next scheduled check.
+
+#### What gets alerted
+
 - **Temperature alerts** — fires when temp goes above/below warning/danger thresholds; repeats after cooldown if condition persists
 - **Gravity stall** — fires if gravity hasn't changed by more than `GRAVITY_STALL_THRESHOLD` RAPT units over 48 hours
 - **Daily summary** — sent at 07:30 and 19:30 UTC with current gravity, OG, ABV, attenuation, gravity velocity, 24h temperature stats, battery level, and reading count

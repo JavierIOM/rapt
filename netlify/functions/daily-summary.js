@@ -165,31 +165,21 @@ exports.handler = async (event) => {
                 continue;
             }
 
-            // Determine OG — try profile session first, fall back to manual env var, then first reading
+            // Determine OG — read directly from activeProfileSession (already on device object),
+            // normalise from SG format (e.g. 1.047) to RAPT units (e.g. 1047.0)
             let og = null;
 
-            if (device.activeProfileSession && device.activeProfileSession.id) {
-                try {
-                    const profiles = await makeRequest(`${CONFIG.apiUrl}/Profiles/GetProfiles`, {
-                        method: 'GET',
-                        headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' }
-                    });
-                    for (const profile of profiles) {
-                        const session = (profile.sessions || []).find(s => s.id === device.activeProfileSession.id);
-                        if (session && session.originalGravity) {
-                            og = session.originalGravity;
-                            break;
-                        }
-                    }
-                } catch (e) {
-                    console.log('Could not fetch profile session OG:', e.message);
-                }
+            if (device.activeProfileSession && device.activeProfileSession.originalGravity) {
+                const raw = device.activeProfileSession.originalGravity;
+                og = raw < 2.0 ? raw * 1000 : raw;
+                console.log(`OG from profile session: ${og} (${(og / 1000).toFixed(3)})`);
             }
 
             if (!og && process.env.RAPT_MANUAL_OG) og = parseFloat(process.env.RAPT_MANUAL_OG);
             if (!og) {
                 const oldest = [...telemetry].sort((a, b) => new Date(a.createdOn) - new Date(b.createdOn))[0];
                 og = oldest.gravity;
+                console.log(`OG from first telemetry reading: ${og}`);
             }
 
             const message = buildSummary(device, telemetry, og);

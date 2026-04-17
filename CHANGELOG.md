@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.3.2] - 2026-04-15
+
+### Fixed
+- `daily-summary.js`: OG was being fetched via a redundant `/api/Profiles/GetProfiles` call and treated as RAPT units when it's actually in SG format (e.g. 1.047) — causing ABV to report as ~0.35% instead of the correct value. Now reads `device.activeProfileSession.originalGravity` directly and normalises to RAPT units, matching the fix applied to `hydrometers.js`
+
 ## [3.3.1] - 2026-04-14
 
 ### Changed

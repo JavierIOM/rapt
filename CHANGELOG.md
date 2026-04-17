@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.0] - 2026-04-17
+
+### Added
+- Telegram bot now accepts incoming commands — `/temp`, `/gravity`, `/abv`, `/battery`, `/status`, `/help`
+- `netlify/functions/bot-webhook.js` — receives Telegram webhook POSTs, queries live RAPT data, replies inline
+- Bot ignores messages from any chat other than the configured `TELEGRAM_CHAT_ID`
+
 ## [3.3.2] - 2026-04-15
 
 ### Fixed

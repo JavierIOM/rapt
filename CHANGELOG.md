@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.4.1] - 2026-04-19
+
+### Fixed
+- Gravity stall alert now fires once and stays silent until gravity moves again — previously re-alerting every 15 minutes due to cooldown state not persisting correctly between runs
+
 ## [3.4.0] - 2026-04-17
 
 ### Added

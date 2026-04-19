@@ -284,6 +284,7 @@ exports.handler = async (event) => {
             }
 
             // --- Gravity stall check ---
+            // Fire once when stall is first detected; stay silent until gravity moves again.
             const stallKey = `${device.id}-stall`;
             const stalled = isGravityStalled(device.telemetry);
 
@@ -293,17 +294,13 @@ exports.handler = async (event) => {
                     stateChanged = true;
                 }
                 console.log(`${device.name}: gravity active - no stall`);
+            } else if (alertState[stallKey]) {
+                console.log(`${device.name}: stall already reported — waiting for gravity to move`);
             } else {
-                const lastStallAlert = alertState[stallKey];
-                if (lastStallAlert && (now - lastStallAlert) < stallCooldownMs) {
-                    const hoursAgo = ((now - lastStallAlert) / 3600000).toFixed(1);
-                    console.log(`${device.name}: stall alert suppressed (sent ${hoursAgo}h ago)`);
-                } else {
-                    console.log(`${device.name}: gravity stalled — alerting`);
-                    await sendTelegram(buildStallAlertMessage(device));
-                    alertState[stallKey] = now;
-                    stateChanged = true;
-                }
+                console.log(`${device.name}: gravity stalled — alerting`);
+                await sendTelegram(buildStallAlertMessage(device));
+                alertState[stallKey] = now;
+                stateChanged = true;
             }
         }
 

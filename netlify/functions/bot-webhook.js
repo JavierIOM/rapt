@@ -213,13 +213,13 @@ exports.handler = async (event) => {
     }
 
     if (text === '/pause') {
-        await setAlertsPaused(true);
+        try { await setAlertsPaused(true); } catch (e) { console.error('setAlertsPaused error:', e.message); }
         await sendTelegram(chatId, 'Alerts paused. Send /resume to re-enable them.');
         return { statusCode: 200, body: 'ok' };
     }
 
     if (text === '/resume') {
-        await setAlertsPaused(false);
+        try { await setAlertsPaused(false); } catch (e) { console.error('setAlertsPaused error:', e.message); }
         await sendTelegram(chatId, 'Alerts resumed.');
         return { statusCode: 200, body: 'ok' };
     }

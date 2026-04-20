@@ -114,10 +114,17 @@ function tempStatus(temp) {
     return 'Good';
 }
 
-function buildResponse(command, readings) {
-    if (readings.length === 0) return 'No devices found.';
+function greeting() {
+    const hour = new Date().getUTCHours() + 1; // GMT+1 (BST)
+    if (hour >= 5 && hour < 12) return 'Good morning, Javier';
+    if (hour >= 12 && hour < 18) return 'Good afternoon, Javier';
+    return 'Good evening, Javier';
+}
 
-    const lines = [];
+function buildResponse(command, readings) {
+    if (readings.length === 0) return `${greeting()} — no devices found.`;
+
+    const lines = [`${greeting()} — here's your brew update:\n`];
 
     for (const { device, latest, og, profileName, targetFG } of readings) {
         const name = profileName || device.name || device.id;
@@ -214,13 +221,13 @@ exports.handler = async (event) => {
 
     if (text === '/pause') {
         try { await setAlertsPaused(true); } catch (e) { console.error('setAlertsPaused error:', e.message); }
-        await sendTelegram(chatId, 'Alerts paused. Send /resume to re-enable them.');
+        await sendTelegram(chatId, `${greeting()} — alerts paused. Send /resume whenever you want them back.`);
         return { statusCode: 200, body: 'ok' };
     }
 
     if (text === '/resume') {
         try { await setAlertsPaused(false); } catch (e) { console.error('setAlertsPaused error:', e.message); }
-        await sendTelegram(chatId, 'Alerts resumed.');
+        await sendTelegram(chatId, `${greeting()} — alerts are back on. I'll let you know if anything looks off.`);
         return { statusCode: 200, body: 'ok' };
     }
 

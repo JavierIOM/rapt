@@ -234,6 +234,11 @@ exports.handler = async (event) => {
             const ccRaw = await store.get('cold-crash');
             coldCrashMode = ccRaw === 'true' || ccRaw === true;
             console.log(`Cold crash blob raw value: ${JSON.stringify(ccRaw)} → coldCrashMode=${coldCrashMode}`);
+            const pausedRaw = await store.get('alerts-paused');
+            if (pausedRaw === 'true') {
+                console.log('Alerts are paused — skipping all checks');
+                return { statusCode: 200, body: 'Alerts paused' };
+            }
         } catch (e) {
             console.log('Blobs unavailable, skipping cooldown state:', e.message);
         }

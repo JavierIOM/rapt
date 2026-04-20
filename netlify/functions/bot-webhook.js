@@ -171,7 +171,15 @@ const HELP_TEXT = `Raptzilla Bot — available commands:
 /abv — current ABV and attenuation
 /battery — battery level
 /status — everything at once
+/pause — silence all alerts
+/resume — re-enable alerts
 /help — this message`;
+
+async function setAlertsPaused(paused) {
+    const { getStore } = require('@netlify/blobs');
+    const store = getStore('rapt-alerts');
+    await store.set('alerts-paused', paused ? 'true' : 'false');
+}
 
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
@@ -201,6 +209,18 @@ exports.handler = async (event) => {
 
     if (text === '/help' || text === '/start') {
         await sendTelegram(chatId, HELP_TEXT);
+        return { statusCode: 200, body: 'ok' };
+    }
+
+    if (text === '/pause') {
+        await setAlertsPaused(true);
+        await sendTelegram(chatId, 'Alerts paused. Send /resume to re-enable them.');
+        return { statusCode: 200, body: 'ok' };
+    }
+
+    if (text === '/resume') {
+        await setAlertsPaused(false);
+        await sendTelegram(chatId, 'Alerts resumed.');
         return { statusCode: 200, body: 'ok' };
     }
 

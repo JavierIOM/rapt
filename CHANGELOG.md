@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.4.3] - 2026-04-19
+
+### Added
+- `/pause` and `/resume` Telegram bot commands — silence all alerts instantly, re-enable with a message
+
 ## [3.4.2] - 2026-04-19
 
 ### Fixed

@@ -115,7 +115,7 @@ function tempStatus(temp) {
 }
 
 function greeting() {
-    const hour = new Date().getUTCHours() + 1; // GMT+1 (BST)
+    const hour = parseInt(new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hour12: false, timeZone: 'Europe/London' }).format(new Date()));
     if (hour >= 5 && hour < 12) return 'Good morning, Javier';
     if (hour >= 12 && hour < 18) return 'Good afternoon, Javier';
     return 'Good evening, Javier';

@@ -222,29 +222,20 @@ exports.handler = async (event) => {
             return { statusCode: 200, body: 'No readings' };
         }
 
-        // Load alert state from Blobs
+        // Fetch all state via HTTP — on-demand function has reliable Blobs access
         let alertState = {};
-        try {
-            const { getStore } = require('@netlify/blobs');
-            const store = getStore('rapt-alerts');
-            const saved = await store.get('alert-state', { type: 'json' });
-            if (saved) alertState = saved;
-        } catch (e) {
-            console.log('Blobs unavailable for alert state:', e.message);
-        }
-
-        // Fetch cold crash + paused state via HTTP — on-demand function has reliable Blobs access
         let coldCrashMode = false;
         try {
             const stateRes = await makeRequest('https://rapt.rockyroo.fish/.netlify/functions/cold-crash');
             coldCrashMode = stateRes.coldCrash === true;
+            if (stateRes.alertState) alertState = stateRes.alertState;
             console.log(`Cold crash: ${coldCrashMode}, Alerts paused: ${stateRes.alertsPaused}`);
             if (stateRes.alertsPaused === true) {
                 console.log('Alerts are paused — skipping all checks');
                 return { statusCode: 200, body: 'Alerts paused' };
             }
         } catch (e) {
-            console.log('Could not fetch alert state config:', e.message);
+            console.log('Could not fetch state config:', e.message);
         }
 
         if (coldCrashMode) {
@@ -311,12 +302,15 @@ exports.handler = async (event) => {
             }
         }
 
-        // Persist updated alert state
+        // Persist updated alert state via HTTP — same reliable path as the read
         if (stateChanged) {
             try {
-                const { getStore } = require('@netlify/blobs');
-                const store = getStore('rapt-alerts');
-                await store.set('alert-state', JSON.stringify(alertState));
+                const patchBody = JSON.stringify({ alertState });
+                await makeRequest('https://rapt.rockyroo.fish/.netlify/functions/cold-crash', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(patchBody) },
+                    body: patchBody,
+                });
             } catch (e) {
                 console.log('Could not persist alert state:', e.message);
             }

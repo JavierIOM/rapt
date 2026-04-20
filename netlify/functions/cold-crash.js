@@ -19,7 +19,7 @@ exports.handler = async (event) => {
     const headers = {
         'Access-Control-Allow-Origin': corsOrigin,
         'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
         'Content-Type': 'application/json',
     };
 
@@ -35,21 +35,36 @@ exports.handler = async (event) => {
         return { statusCode: 500, headers, body: JSON.stringify({ error: 'Blobs unavailable' }) };
     }
 
-    // GET — return current state (cold crash + paused)
+    // GET — return current state (cold crash + paused + alert state)
     if (event.httpMethod === 'GET') {
         try {
             const ccRaw = await store.get(BLOB_KEY);
             const pausedRaw = await store.get('alerts-paused');
+            const alertState = await store.get('alert-state', { type: 'json' });
             return {
                 statusCode: 200,
                 headers,
                 body: JSON.stringify({
                     coldCrash: ccRaw === 'true' || ccRaw === true,
                     alertsPaused: pausedRaw === 'true' || pausedRaw === true,
+                    alertState: alertState || {},
                 }),
             };
         } catch (e) {
-            return { statusCode: 200, headers, body: JSON.stringify({ coldCrash: false, alertsPaused: false }) };
+            return { statusCode: 200, headers, body: JSON.stringify({ coldCrash: false, alertsPaused: false, alertState: {} }) };
+        }
+    }
+
+    // PATCH — persist alert state (called by temp-monitor after sending alerts)
+    if (event.httpMethod === 'PATCH') {
+        try {
+            const body = JSON.parse(event.body || '{}');
+            if (body.alertState) {
+                await store.set('alert-state', JSON.stringify(body.alertState));
+            }
+            return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+        } catch (e) {
+            return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
         }
     }
 

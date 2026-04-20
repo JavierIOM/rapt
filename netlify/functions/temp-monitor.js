@@ -230,8 +230,10 @@ exports.handler = async (event) => {
             const store = getStore('rapt-alerts');
             const saved = await store.get('alert-state', { type: 'json' });
             if (saved) alertState = saved;
-            const ccValue = await store.get('cold-crash', { type: 'json' });
-            coldCrashMode = ccValue === true;
+            // Read as raw string — avoid type:'json' which can fail silently on boolean blobs
+            const ccRaw = await store.get('cold-crash');
+            coldCrashMode = ccRaw === 'true' || ccRaw === true;
+            console.log(`Cold crash blob raw value: ${JSON.stringify(ccRaw)} → coldCrashMode=${coldCrashMode}`);
         } catch (e) {
             console.log('Blobs unavailable, skipping cooldown state:', e.message);
         }
@@ -269,17 +271,13 @@ exports.handler = async (event) => {
                     } else {
                         console.log(`${device.name}: temp ${device.temperature.toFixed(1)}C - OK`);
                     }
+                } else if (alertState[tempKey]) {
+                    console.log(`${device.name}: ${effectiveStatus} already reported — waiting for temp to recover`);
                 } else {
-                    const lastTempAlert = alertState[tempKey];
-                    if (lastTempAlert && (now - lastTempAlert) < cooldownMs) {
-                        const minsAgo = Math.round((now - lastTempAlert) / 60000);
-                        console.log(`${device.name}: ${effectiveStatus} suppressed (sent ${minsAgo}m ago)`);
-                    } else {
-                        console.log(`${device.name}: ${effectiveStatus} at ${device.temperature.toFixed(1)}C — alerting`);
-                        await sendTelegram(buildTempAlertMessage(device, effectiveStatus));
-                        alertState[tempKey] = now;
-                        stateChanged = true;
-                    }
+                    console.log(`${device.name}: ${effectiveStatus} at ${device.temperature.toFixed(1)}C — alerting`);
+                    await sendTelegram(buildTempAlertMessage(device, effectiveStatus));
+                    alertState[tempKey] = now;
+                    stateChanged = true;
                 }
             }
 

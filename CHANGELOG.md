@@ -1,9 +1,11 @@
 # Changelog
 
-## [3.4.1] - 2026-04-19
+## [3.4.2] - 2026-04-19
 
 ### Fixed
-- Gravity stall alert now fires once and stays silent until gravity moves again — previously re-alerting every 15 minutes due to cooldown state not persisting correctly between runs
+- Temperature alerts now fire once per condition and stay silent until temp recovers — removes dependence on Blobs-persisted cooldown timestamps which weren't persisting reliably
+- Cold crash blob now read as raw string (`ccRaw === 'true'`) instead of `type:'json'` boolean — fixes cold crash mode silently failing to suppress low-temp alerts
+- Gravity stall alert now fires once and stays silent until gravity moves again — same fix as above
 
 ## [3.4.0] - 2026-04-17
 

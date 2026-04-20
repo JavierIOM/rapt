@@ -83,11 +83,11 @@ function buildSummary(device, telemetry24h, og) {
     const minTemp = temps.length > 0 ? Math.min(...temps) : null;
     const maxTemp = temps.length > 0 ? Math.max(...temps) : null;
 
-    // ABV and attenuation from latest reading
-    const ogSG = og / 1000;
+    // ABV and attenuation from latest reading — only valid if we have an OG
+    const ogSG = og != null ? og / 1000 : null;
     const fgSG = latest.gravity / 1000;
-    const abv = Math.max(0, (ogSG - fgSG) * 131.25);
-    const attenuationRaw = ogSG > 1.0 ? ((ogSG - fgSG) / (ogSG - 1.0)) * 100 : null;
+    const abv = ogSG != null ? Math.max(0, (ogSG - fgSG) * 131.25) : null;
+    const attenuationRaw = ogSG != null && ogSG > 1.0 ? ((ogSG - fgSG) / (ogSG - 1.0)) * 100 : null;
     const attenuation = attenuationRaw != null ? Math.max(0, Math.min(100, attenuationRaw)) : null;
 
     // Gravity velocity from latest reading (already in telemetry if available)
@@ -110,8 +110,10 @@ function buildSummary(device, telemetry24h, og) {
         `<b>Raptzilla Daily Summary - ${device.name}</b>`,
         ``,
         `<b>Gravity</b>`,
-        `  Current: <b>${fgSG.toFixed(3)}</b>  (OG: ${ogSG.toFixed(3)})`,
-        `  ABV: <b>${abv.toFixed(2)}%</b>`,
+        ogSG != null
+            ? `  Current: <b>${fgSG.toFixed(3)}</b>  (OG: ${ogSG.toFixed(3)})`
+            : `  Current: <b>${fgSG.toFixed(3)}</b>  (OG: not set)`,
+        abv != null ? `  ABV: <b>${abv.toFixed(2)}%</b>` : null,
         attenuation != null ? `  Attenuation: <b>${attenuation.toFixed(1)}%</b>` : null,
         gravVelocity != null
             ? `  Gravity velocity: ${gravVelocity.toFixed(2)} ppd`
@@ -177,9 +179,9 @@ exports.handler = async (event) => {
 
             if (!og && process.env.RAPT_MANUAL_OG) og = parseFloat(process.env.RAPT_MANUAL_OG);
             if (!og) {
-                const oldest = [...telemetry].sort((a, b) => new Date(a.createdOn) - new Date(b.createdOn))[0];
-                og = oldest.gravity;
-                console.log(`OG from first telemetry reading: ${og}`);
+                // No profile OG and no manual override — skip ABV/attenuation rather than using
+                // a mid-fermentation reading from the 25h window, which would understate ABV
+                console.log('No OG available — summary will omit ABV and attenuation');
             }
 
             const message = buildSummary(device, telemetry, og);

@@ -14,10 +14,6 @@ const CONFIG = {
     tempDangerMax: process.env.TEMP_DANGER_MAX ? parseFloat(process.env.TEMP_DANGER_MAX) : 28,
     // Minimum gravity change (RAPT units) over 48h before a stall is declared
     gravityStallThreshold: process.env.GRAVITY_STALL_THRESHOLD ? parseFloat(process.env.GRAVITY_STALL_THRESHOLD) : 2,
-    // Cooldown in minutes between repeat alerts for the same condition
-    alertCooldownMinutes: process.env.ALERT_COOLDOWN_MINUTES ? parseInt(process.env.ALERT_COOLDOWN_MINUTES) : 60,
-    // Stall alerts repeat less frequently — default 6 hours
-    stallCooldownMinutes: process.env.STALL_COOLDOWN_MINUTES ? parseInt(process.env.STALL_COOLDOWN_MINUTES) : 360,
 };
 
 function makeRequest(url, options = {}) {
@@ -243,7 +239,6 @@ exports.handler = async (event) => {
         }
 
         const now = Date.now();
-        const cooldownMs = CONFIG.alertCooldownMinutes * 60 * 1000;
         let stateChanged = false;
 
         for (const device of devices) {

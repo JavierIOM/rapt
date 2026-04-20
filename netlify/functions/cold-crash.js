@@ -99,7 +99,7 @@ exports.handler = async (event) => {
             }
         }
 
-        await store.set(BLOB_KEY, JSON.stringify(state));
+        await store.set(BLOB_KEY, state ? 'true' : 'false');
         console.log(`Cold crash mode set to: ${state}`);
         return {
             statusCode: 200,

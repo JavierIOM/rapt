@@ -107,10 +107,10 @@ async function getDeviceData() {
 
 function tempStatus(temp) {
     if (temp == null) return 'No reading';
-    if (temp > CONFIG.tempDangerMax) return `Too high (danger > ${CONFIG.tempDangerMax}C)`;
-    if (temp > CONFIG.tempWarningMax) return `High (warning > ${CONFIG.tempWarningMax}C)`;
-    if (temp < CONFIG.tempDangerMin) return `Too low (danger < ${CONFIG.tempDangerMin}C)`;
-    if (temp < CONFIG.tempWarningMin) return `Low (warning < ${CONFIG.tempWarningMin}C)`;
+    if (temp > CONFIG.tempDangerMax) return `Too high (above ${CONFIG.tempDangerMax}C)`;
+    if (temp > CONFIG.tempWarningMax) return `Running high (above ${CONFIG.tempWarningMax}C)`;
+    if (temp < CONFIG.tempDangerMin) return `Too low (below ${CONFIG.tempDangerMin}C)`;
+    if (temp < CONFIG.tempWarningMin) return `Running low (below ${CONFIG.tempWarningMin}C)`;
     return 'Good';
 }
 

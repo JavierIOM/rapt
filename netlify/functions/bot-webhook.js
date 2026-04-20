@@ -183,9 +183,12 @@ const HELP_TEXT = `Raptzilla Bot — available commands:
 /help — this message`;
 
 async function setAlertsPaused(paused) {
-    const { getStore } = require('@netlify/blobs');
-    const store = getStore('rapt-alerts');
-    await store.set('alerts-paused', paused ? 'true' : 'false');
+    const body = JSON.stringify({ alertsPaused: paused });
+    await makeRequest('https://rapt.rockyroo.fish/.netlify/functions/cold-crash', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+        body,
+    });
 }
 
 exports.handler = async (event) => {

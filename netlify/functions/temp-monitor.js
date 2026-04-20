@@ -244,7 +244,6 @@ exports.handler = async (event) => {
 
         const now = Date.now();
         const cooldownMs = CONFIG.alertCooldownMinutes * 60 * 1000;
-        const stallCooldownMs = CONFIG.stallCooldownMinutes * 60 * 1000;
         let stateChanged = false;
 
         for (const device of devices) {

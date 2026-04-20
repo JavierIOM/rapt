@@ -55,12 +55,16 @@ exports.handler = async (event) => {
         }
     }
 
-    // PATCH — persist alert state (called by temp-monitor after sending alerts)
+    // PATCH — persist state (called by temp-monitor and bot-webhook)
     if (event.httpMethod === 'PATCH') {
         try {
             const body = JSON.parse(event.body || '{}');
-            if (body.alertState) {
-                await store.set('alert-state', JSON.stringify(body.alertState));
+            if (body.alertState !== undefined) {
+                // Store as object — let Blobs SDK serialise it, matching { type: 'json' } on read
+                await store.set('alert-state', body.alertState);
+            }
+            if (body.alertsPaused !== undefined) {
+                await store.set('alerts-paused', body.alertsPaused ? 'true' : 'false');
             }
             return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
         } catch (e) {

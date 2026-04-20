@@ -35,17 +35,21 @@ exports.handler = async (event) => {
         return { statusCode: 500, headers, body: JSON.stringify({ error: 'Blobs unavailable' }) };
     }
 
-    // GET — return current state
+    // GET — return current state (cold crash + paused)
     if (event.httpMethod === 'GET') {
         try {
-            const value = await store.get(BLOB_KEY, { type: 'json' });
+            const ccRaw = await store.get(BLOB_KEY);
+            const pausedRaw = await store.get('alerts-paused');
             return {
                 statusCode: 200,
                 headers,
-                body: JSON.stringify({ coldCrash: value === true }),
+                body: JSON.stringify({
+                    coldCrash: ccRaw === 'true' || ccRaw === true,
+                    alertsPaused: pausedRaw === 'true' || pausedRaw === true,
+                }),
             };
         } catch (e) {
-            return { statusCode: 200, headers, body: JSON.stringify({ coldCrash: false }) };
+            return { statusCode: 200, headers, body: JSON.stringify({ coldCrash: false, alertsPaused: false }) };
         }
     }
 

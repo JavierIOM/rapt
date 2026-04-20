@@ -222,25 +222,29 @@ exports.handler = async (event) => {
             return { statusCode: 200, body: 'No readings' };
         }
 
-        // Load alert state and cold crash flag from Netlify Blobs
+        // Load alert state from Blobs
         let alertState = {};
-        let coldCrashMode = false;
         try {
             const { getStore } = require('@netlify/blobs');
             const store = getStore('rapt-alerts');
             const saved = await store.get('alert-state', { type: 'json' });
             if (saved) alertState = saved;
-            // Read as raw string — avoid type:'json' which can fail silently on boolean blobs
-            const ccRaw = await store.get('cold-crash');
-            coldCrashMode = ccRaw === 'true' || ccRaw === true;
-            console.log(`Cold crash blob raw value: ${JSON.stringify(ccRaw)} → coldCrashMode=${coldCrashMode}`);
-            const pausedRaw = await store.get('alerts-paused');
-            if (pausedRaw === 'true') {
+        } catch (e) {
+            console.log('Blobs unavailable for alert state:', e.message);
+        }
+
+        // Fetch cold crash + paused state via HTTP — on-demand function has reliable Blobs access
+        let coldCrashMode = false;
+        try {
+            const stateRes = await makeRequest('https://rapt.rockyroo.fish/.netlify/functions/cold-crash');
+            coldCrashMode = stateRes.coldCrash === true;
+            console.log(`Cold crash: ${coldCrashMode}, Alerts paused: ${stateRes.alertsPaused}`);
+            if (stateRes.alertsPaused === true) {
                 console.log('Alerts are paused — skipping all checks');
                 return { statusCode: 200, body: 'Alerts paused' };
             }
         } catch (e) {
-            console.log('Blobs unavailable, skipping cooldown state:', e.message);
+            console.log('Could not fetch alert state config:', e.message);
         }
 
         if (coldCrashMode) {

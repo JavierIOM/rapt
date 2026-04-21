@@ -8,8 +8,6 @@
   to = "/index.html"
   status = 200
 
-[functions."temp-monitor"]
-  schedule = "*/15 * * * *"
 
 [functions."daily-summary"]
   schedule = "30 7,19 * * *"

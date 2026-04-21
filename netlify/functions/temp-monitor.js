@@ -197,8 +197,7 @@ function buildStallAlertMessage(device) {
 
 // Netlify scheduled function — runs every 15 minutes
 exports.handler = async (event) => {
-    console.log('temp-monitor: alerts disabled');
-    return { statusCode: 200, body: 'Alerts disabled' };
+    console.log('temp-monitor: running check');
 
     if (!CONFIG.email || !CONFIG.apiSecret) {
         console.error('Missing RAPT credentials');

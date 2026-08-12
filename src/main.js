@@ -24,8 +24,9 @@ function loadTempConfig() {
 
 let tempConfig = loadTempConfig();
 
-// Theme management — dark is the default; only override if user has explicitly set a preference
-let darkMode = localStorage.getItem('darkMode') !== null ? localStorage.getItem('darkMode') === 'true' : true;
+// Theme management. Light is the default here (project-specific: this
+// dashboard is mostly read in daylight). A stored preference always wins.
+let darkMode = localStorage.getItem('darkMode') !== null ? localStorage.getItem('darkMode') === 'true' : false;
 let monochromeMode = localStorage.getItem('monochromeMode') === 'true';
 let coldCrashMode = localStorage.getItem('coldCrashMode') === 'true';
 
@@ -127,34 +128,35 @@ async function toggleColdCrashMode() {
 // Apply theme on load
 applyTheme();
 
-// Create floating bubbles
+// Rising bubbles. Deliberately sparse and slow: this is ambient texture, not
+// a feature. Skipped entirely when the user has asked for reduced motion.
 function createBubbles() {
     const bubblesContainer = document.getElementById('bubbles');
-    const bubbleCount = 60;
+    if (!bubblesContainer) return;
 
-    // Clear existing bubbles
     bubblesContainer.innerHTML = '';
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const bubbleCount = 14;
 
     for (let i = 0; i < bubbleCount; i++) {
         const bubble = document.createElement('div');
         bubble.className = 'bubble';
 
-        // Random size between 20px and 120px
-        const size = Math.random() * 100 + 20;
+        const size = Math.random() * 34 + 8;
         bubble.style.width = size + 'px';
         bubble.style.height = size + 'px';
 
-        // Random starting position
         bubble.style.left = Math.random() * 100 + '%';
-        bubble.style.bottom = '-' + (size + 50) + 'px';
+        bubble.style.bottom = '-' + (size + 40) + 'px';
 
-        // Random horizontal movement during float
-        const floatX = (Math.random() - 0.5) * 200;
+        // Gentle horizontal drift on the way up
+        const floatX = (Math.random() - 0.5) * 90;
         bubble.style.setProperty('--float-x', floatX + 'px');
 
-        // Random animation delay and duration
-        bubble.style.animationDelay = Math.random() * 15 + 's';
-        bubble.style.animationDuration = (Math.random() * 15 + 15) + 's';
+        bubble.style.animationDelay = Math.random() * 28 + 's';
+        bubble.style.animationDuration = (Math.random() * 22 + 30) + 's';
 
         bubblesContainer.appendChild(bubble);
     }
@@ -206,6 +208,30 @@ async function fetchHydrometers() {
 function formatTime(timestamp) {
     const date = new Date(timestamp);
     return date.toLocaleString();
+}
+
+// Chart colours for the current theme. Mirrors the tokens in style.css.
+function palette() {
+    if (monochromeMode) {
+        return darkMode ? {
+            text: '#EDEDEC', muted: '#A6A6A3', grid: 'rgba(255,255,255,0.06)',
+            good: '#A8A8A5', warning: '#C9C9C6', danger: '#EDEDEC',
+            temp: '#787875', abv: '#9A9A97', attenuation: '#C9C9C6', velocity: '#6A6A67'
+        } : {
+            text: '#1F1F1E', muted: '#575756', grid: 'rgba(0,0,0,0.06)',
+            good: '#4A4A48', warning: '#6E6E6B', danger: '#1F1F1E',
+            temp: '#82827F', abv: '#5E5E5B', attenuation: '#33332F', velocity: '#9C9C99'
+        };
+    }
+    return darkMode ? {
+        text: '#EDEAE5', muted: '#A8A29A', grid: 'rgba(255,255,255,0.06)',
+        good: '#7FA87A', warning: '#D0A25E', danger: '#D98078',
+        temp: '#8A847C', abv: '#79A6B5', attenuation: '#A3B074', velocity: '#D0A25E'
+    } : {
+        text: '#26231F', muted: '#5C5751', grid: 'rgba(38,35,31,0.07)',
+        good: '#4A7A46', warning: '#96652A', danger: '#A34840',
+        temp: '#8A847C', abv: '#4E7A8A', attenuation: '#6F7D43', velocity: '#B0763C'
+    };
 }
 
 // Create chart for a device
@@ -264,49 +290,24 @@ function createChart(deviceId, telemetryData, timeRange = 24) {
         return Math.abs(v) > VELOCITY_MAX ? null : v;
     });
 
-    // Create dynamic colors for attenuation based on completion (pink -> purple)
-    const attenuationColors = sortedData.map(d => {
-        const att = d.attenuation || 0;
-        if (monochromeMode) {
-            // In monochrome, go from light gray to dark gray
-            const grayValue = darkMode ?
-                Math.floor(212 - (att / 100) * 100) : // 212 -> 112
-                Math.floor(64 + (att / 100) * 100);   // 64 -> 164
-            return `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
-        } else {
-            // Interpolate from pink (236, 72, 153) to purple (167, 139, 250)
-            const progress = Math.min(att / 100, 1);
-            const r = Math.floor(236 - (236 - 167) * progress);
-            const g = Math.floor(72 + (139 - 72) * progress);
-            const b = Math.floor(153 + (250 - 153) * progress);
-            return `rgb(${r}, ${g}, ${b})`;
-        }
-    });
+    // Chart palette. Kept in step with the CSS tokens in style.css: muted,
+    // earthy, one colour per series. The temperature line stays neutral on
+    // purpose so its status-coloured points are the thing you read.
+    const p = palette();
 
-    // Create dynamic colors for temperature based on value and theme
+    // Temperature points carry the status colour. In cold crash mode low
+    // temperatures are expected, so they are not flagged.
     const tempColors = sortedData.map(d => {
         const temp = d.temperature;
-        // In cold crash mode, ignore low temperatures (treat them as good)
         const isLowTemp = temp < tempConfig.tempDangerMin;
         const isHighTemp = temp > tempConfig.tempDangerMax;
 
-        if (monochromeMode) {
-            if ((isLowTemp && !coldCrashMode) || isHighTemp) {
-                return darkMode ? 'rgb(212, 212, 212)' : 'rgb(82, 82, 82)'; // danger
-            } else if ((temp >= tempConfig.tempDangerMin && temp < tempConfig.tempWarningMin) || (temp > tempConfig.tempWarningMax && temp <= tempConfig.tempDangerMax)) {
-                return darkMode ? 'rgb(163, 163, 163)' : 'rgb(115, 115, 115)'; // warning
-            } else {
-                return darkMode ? 'rgb(115, 115, 115)' : 'rgb(64, 64, 64)'; // good
-            }
-        } else {
-            if ((isLowTemp && !coldCrashMode) || isHighTemp) {
-                return 'rgb(239, 68, 68)'; // red-500
-            } else if ((temp >= tempConfig.tempDangerMin && temp < tempConfig.tempWarningMin) || (temp > tempConfig.tempWarningMax && temp <= tempConfig.tempDangerMax)) {
-                return 'rgb(249, 115, 22)'; // orange-500
-            } else {
-                return 'rgb(34, 197, 94)'; // green-500
-            }
+        if ((isLowTemp && !coldCrashMode) || isHighTemp) {
+            return p.danger;
+        } else if ((temp >= tempConfig.tempDangerMin && temp < tempConfig.tempWarningMin) || (temp > tempConfig.tempWarningMax && temp <= tempConfig.tempDangerMax)) {
+            return p.warning;
         }
+        return p.good;
     });
 
     charts[deviceId] = new Chart(ctx, {
@@ -317,53 +318,44 @@ function createChart(deviceId, telemetryData, timeRange = 24) {
                 {
                     label: 'Temperature (°C)',
                     data: temperatures,
-                    borderColor: monochromeMode ? (darkMode ? 'rgb(163, 163, 163)' : 'rgb(115, 115, 115)') : 'rgb(34, 197, 94)',
-                    backgroundColor: monochromeMode ? (darkMode ? 'rgba(163, 163, 163, 0.1)' : 'rgba(115, 115, 115, 0.1)') : 'rgba(34, 197, 94, 0.1)',
+                    borderColor: p.temp,
+                    backgroundColor: 'transparent',
                     yAxisID: 'y',
-                    tension: 0.4,
+                    tension: 0.3,
                     pointBackgroundColor: tempColors,
                     pointBorderColor: tempColors,
-                    pointRadius: 4,
-                    borderWidth: 3
+                    pointRadius: 2.5,
+                    borderWidth: 1.5
                 },
                 {
                     label: 'ABV (%)',
                     data: abv,
-                    borderColor: monochromeMode ? (darkMode ? 'rgb(163, 163, 163)' : 'rgb(115, 115, 115)') : 'rgb(59, 130, 246)',
-                    backgroundColor: monochromeMode ? (darkMode ? 'rgba(163, 163, 163, 0.1)' : 'rgba(115, 115, 115, 0.1)') : 'rgba(59, 130, 246, 0.1)',
+                    borderColor: p.abv,
+                    backgroundColor: 'transparent',
                     yAxisID: 'y1',
-                    tension: 0.4,
-                    borderWidth: 3
+                    tension: 0.3,
+                    pointRadius: 0,
+                    borderWidth: 1.5
                 },
                 {
                     label: 'Attenuation (%)',
                     data: attenuation,
-                    borderColor: function(context) {
-                        const index = context.dataIndex;
-                        return attenuationColors[index];
-                    },
-                    segment: {
-                        borderColor: function(context) {
-                            return attenuationColors[context.p0DataIndex];
-                        }
-                    },
-                    backgroundColor: monochromeMode ? (darkMode ? 'rgba(212, 212, 212, 0.1)' : 'rgba(64, 64, 64, 0.1)') : 'rgba(236, 72, 153, 0.1)',
+                    borderColor: p.attenuation,
+                    backgroundColor: 'transparent',
                     yAxisID: 'y2',
-                    tension: 0.4,
-                    pointBackgroundColor: attenuationColors,
-                    pointBorderColor: attenuationColors,
-                    pointRadius: 4,
-                    borderWidth: 3
+                    tension: 0.3,
+                    pointRadius: 0,
+                    borderWidth: 1.5
                 },
                 {
                     label: 'Gravity Velocity (ppd)',
                     data: gravityVelocity,
-                    borderColor: monochromeMode ? (darkMode ? 'rgb(212, 212, 212)' : 'rgb(82, 82, 82)') : 'rgb(234, 179, 8)',
-                    backgroundColor: monochromeMode ? (darkMode ? 'rgba(212, 212, 212, 0.1)' : 'rgba(82, 82, 82, 0.1)') : 'rgba(234, 179, 8, 0.1)',
+                    borderColor: p.velocity,
+                    backgroundColor: 'transparent',
                     yAxisID: 'y3',
-                    tension: 0.4,
-                    pointRadius: 3,
-                    borderWidth: 2
+                    tension: 0.3,
+                    pointRadius: 0,
+                    borderWidth: 1.5
                 }
             ]
         },
@@ -377,24 +369,33 @@ function createChart(deviceId, telemetryData, timeRange = 24) {
             plugins: {
                 legend: {
                     position: 'top',
+                    align: 'start',
                     labels: {
-                        color: darkMode ? 'rgb(203, 213, 225)' : '#222222',
-                        font: {
-                            size: 14,
-                            weight: '600'
-                        },
-                        padding: 20
+                        color: p.muted,
+                        font: { size: 11 },
+                        boxWidth: 10,
+                        boxHeight: 2,
+                        padding: 16,
+                        usePointStyle: false
                     }
                 },
                 title: {
                     display: true,
-                    text: `Fermentation Metrics - ${timeRange === 'all' ? 'All Time' : `Last ${timeRange} Hours`} (${sortedData.length} readings)`,
-                    color: darkMode ? 'rgb(248, 250, 252)' : '#222222',
-                    font: {
-                        size: 16,
-                        weight: '700'
-                    },
-                    padding: 20
+                    align: 'start',
+                    text: `${sortedData.length} readings`,
+                    color: p.muted,
+                    font: { size: 11, weight: '400' },
+                    padding: { top: 0, bottom: 12 }
+                },
+                tooltip: {
+                    backgroundColor: p.text,
+                    titleColor: darkMode ? '#141312' : '#FBFAF8',
+                    bodyColor: darkMode ? '#141312' : '#FBFAF8',
+                    borderWidth: 0,
+                    cornerRadius: 6,
+                    padding: 10,
+                    titleFont: { size: 11, weight: '500' },
+                    bodyFont: { size: 11 }
                 }
             },
             scales: {
@@ -402,81 +403,49 @@ function createChart(deviceId, telemetryData, timeRange = 24) {
                     type: 'linear',
                     display: true,
                     position: 'left',
-                    ticks: { color: darkMode ? 'rgb(148, 163, 184)' : '#595959' },
-                    title: {
-                        display: true,
-                        text: 'Temperature (°C)',
-                        color: darkMode ? 'rgb(203, 213, 225)' : '#595959',
-                        font: {
-                            size: 14,
-                            weight: '600'
-                        }
-                    },
-                    grid: {
-                        color: darkMode ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.06)'
-                    }
+                    ticks: { color: p.muted, font: { size: 10 } },
+                    border: { display: false },
+                    grid: { color: p.grid }
                 },
+                // The three right-hand axes drop their titles and colour their
+                // ticks to match their series instead. Three stacked rotated
+                // titles was most of the chart's clutter, and the legend
+                // already names every series.
                 y1: {
                     type: 'linear',
                     display: true,
                     position: 'right',
-                    ticks: { color: darkMode ? 'rgb(148, 163, 184)' : '#595959' },
-                    title: {
-                        display: true,
-                        text: 'ABV (%)',
-                        color: darkMode ? 'rgb(203, 213, 225)' : '#595959',
-                        font: {
-                            size: 14,
-                            weight: '600'
-                        }
-                    },
-                    grid: {
-                        drawOnChartArea: false,
-                    }
+                    ticks: { color: p.abv, font: { size: 10 } },
+                    border: { display: false },
+                    grid: { drawOnChartArea: false }
                 },
                 y2: {
                     type: 'linear',
                     display: true,
                     position: 'right',
-                    ticks: { color: darkMode ? 'rgb(148, 163, 184)' : '#595959' },
-                    title: {
-                        display: true,
-                        text: 'Attenuation (%)',
-                        color: darkMode ? 'rgb(203, 213, 225)' : '#595959',
-                        font: {
-                            size: 14,
-                            weight: '600'
-                        }
-                    },
-                    grid: {
-                        drawOnChartArea: false,
-                    },
+                    ticks: { color: p.attenuation, font: { size: 10 } },
+                    border: { display: false },
+                    grid: { drawOnChartArea: false },
                     offset: true
                 },
                 y3: {
                     type: 'linear',
                     display: true,
                     position: 'right',
-                    ticks: { color: darkMode ? 'rgb(148, 163, 184)' : '#595959' },
-                    title: {
-                        display: true,
-                        text: 'Gravity Velocity (ppd)',
-                        color: darkMode ? 'rgb(203, 213, 225)' : '#595959',
-                        font: {
-                            size: 14,
-                            weight: '600'
-                        }
-                    },
-                    grid: {
-                        drawOnChartArea: false,
-                    },
+                    ticks: { color: p.velocity, font: { size: 10 } },
+                    border: { display: false },
+                    grid: { drawOnChartArea: false },
                     offset: true
                 },
                 x: {
-                    ticks: { color: darkMode ? 'rgb(148, 163, 184)' : '#595959' },
-                    grid: {
-                        color: darkMode ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.06)'
-                    }
+                    ticks: {
+                        color: p.muted,
+                        font: { size: 10 },
+                        maxRotation: 0,
+                        autoSkipPadding: 24
+                    },
+                    border: { display: false },
+                    grid: { color: p.grid }
                 }
             }
         }
@@ -523,16 +492,16 @@ function displayDevices(hydrometers) {
         // Check for low battery (< 20%)
         const lowBattery = latestData && latestData.battery < 20;
         const batteryWarning = lowBattery
-            ? `<div class="alert alert-warning mb-4">Low Battery Warning: ${latestData.battery.toFixed(0)}% — Please charge soon</div>`
+            ? `<div class="alert alert-warning mb-4">Battery at ${latestData.battery.toFixed(0)}%. Charge it soon.</div>`
             : '';
 
         // Check for temperature warnings (ignore low temps in cold crash mode)
         const highTemp = latestData && latestData.temperature > tempConfig.tempDangerMax;
         const lowTemp = latestData && latestData.temperature < tempConfig.tempDangerMin && !coldCrashMode;
         const tempWarning = highTemp
-            ? `<div class="alert alert-danger mb-4">High Temperature Warning: ${latestData.temperature.toFixed(1)}°C — Temperature exceeds ${tempConfig.tempDangerMax}°C</div>`
+            ? `<div class="alert alert-danger mb-4">Running hot at ${latestData.temperature.toFixed(1)}°C, above your ${tempConfig.tempDangerMax}°C limit.</div>`
             : lowTemp
-            ? `<div class="alert alert-danger mb-4">Low Temperature Warning: ${latestData.temperature.toFixed(1)}°C — Temperature below ${tempConfig.tempDangerMin}°C</div>`
+            ? `<div class="alert alert-danger mb-4">Running cold at ${latestData.temperature.toFixed(1)}°C, below your ${tempConfig.tempDangerMin}°C limit.</div>`
             : '';
 
         // Determine temperature color class (ignore low temps in cold crash mode)
@@ -603,22 +572,23 @@ function displayDevices(hydrometers) {
                 </div>
             </div>` : '';
 
-        // Extra stat cards (brew day, target FG, est. final ABV, ETA)
+        // Session stat tiles (brew day, est. final ABV, ETA). Same tile shape as
+        // the main row so the two rows line up rather than floating centred.
         const extraCards = [
             brewDay !== null ? `
-                <div class="info-card" style="min-width:140px;flex:1;max-width:220px" data-tooltip="Days since fermentation started">
-                    <div class="info-card-label mb-1 text-xs">Brew Day</div>
-                    <div class="info-card-value text-2xl">Day ${brewDay}</div>
+                <div class="info-card" data-tooltip="Days since fermentation started">
+                    <div class="info-card-label mb-1">Brew Day</div>
+                    <div class="info-card-value">Day ${brewDay}</div>
                 </div>` : '',
             estFinalABV !== null ? `
-                <div class="info-card" style="min-width:140px;flex:1;max-width:220px" data-tooltip="Estimated ABV when gravity hits your target FG">
-                    <div class="info-card-label mb-1 text-xs">Est. Final ABV</div>
-                    <div class="info-card-value text-2xl">${estFinalABV.toFixed(2)}%</div>
+                <div class="info-card" data-tooltip="Estimated ABV when gravity hits your target FG">
+                    <div class="info-card-label mb-1">Est. Final ABV</div>
+                    <div class="info-card-value">${estFinalABV.toFixed(2)}%</div>
                 </div>` : '',
             etaDays !== null ? `
-                <div class="info-card" style="min-width:140px;flex:1;max-width:220px" data-tooltip="Estimated days to reach target FG based on current drop rate">
-                    <div class="info-card-label mb-1 text-xs">ETA to FG</div>
-                    <div class="info-card-value text-2xl">${etaDays}d</div>
+                <div class="info-card" data-tooltip="Estimated days to reach target FG based on the current drop rate">
+                    <div class="info-card-label mb-1">ETA to FG</div>
+                    <div class="info-card-value">${etaDays}d</div>
                 </div>` : '',
         ].join('');
 
@@ -627,55 +597,52 @@ function displayDevices(hydrometers) {
         deviceCard.innerHTML = `
             ${batteryWarning}
             ${tempWarning}
-            <div class="device-card-header flex justify-between items-center mb-6 pb-6">
+            <div class="device-card-header flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-5 pb-4">
                 <div>
-                    <h2 class="device-name text-3xl font-bold">
-                        ${displayName}
-                    </h2>
-                    <div class="device-meta text-sm mt-1">
-                        Firmware: ${displayFirmware}
-                        ${device.isLatestFirmware === false ? '<span class="firmware-update">Update Available</span>' : ''}
-                        ${displayProfile ? `<span class="device-meta-sep">|</span> Current profile: ${displayProfile}` : ''}
+                    <h2 class="device-name text-lg">${displayName}</h2>
+                    <div class="device-meta text-xs mt-0.5">
+                        Firmware ${displayFirmware}
+                        ${device.isLatestFirmware === false ? '<span class="firmware-update">update available</span>' : ''}
+                        ${displayProfile ? `<span class="device-meta-sep">/</span> ${displayProfile}` : ''}
                     </div>
                 </div>
-                <div class="text-right">
-                    <div class="device-id font-mono text-sm">ID: ${displayId}</div>
-                    ${latestData ? `<div class="device-stats text-xs mt-1">Battery: ${latestData.battery?.toFixed(0) || 'N/A'}% | Signal: ${latestData.rssi || 'N/A'} dBm | ${formatTime(device.lastActivityTime)}</div>` : ''}
+                <div class="text-xs text-left sm:text-right">
+                    ${latestData ? `<div class="device-stats">${latestData.battery?.toFixed(0) ?? 'N/A'}% battery <span class="device-meta-sep">/</span> ${latestData.rssi ?? 'N/A'} dBm <span class="device-meta-sep">/</span> ${formatTime(device.lastActivityTime)}</div>` : ''}
+                    <div class="device-id font-mono mt-0.5">${displayId}</div>
                 </div>
             </div>
 
             ${latestData ? `
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
                     <div class="${tempClass}" data-tooltip="Current fermentation temperature">
-                        <div class="info-card-label mb-1 text-xs">Temperature</div>
-                        <div class="info-card-value text-2xl">${latestData.temperature?.toFixed(1) || 'N/A'}°C</div>
+                        <div class="info-card-label mb-1">Temperature</div>
+                        <div class="info-card-value">${latestData.temperature?.toFixed(1) || 'N/A'}°C</div>
                     </div>
-                    <div class="info-card" data-tooltip="Current specific gravity — sugar content remaining">
-                        <div class="info-card-label mb-1 text-xs">Gravity</div>
-                        <div class="info-card-value text-xl">${curSG ? curSG.toFixed(3) : 'N/A'}</div>
+                    <div class="info-card" data-tooltip="Current specific gravity, the sugar still left in there">
+                        <div class="info-card-label mb-1">Gravity</div>
+                        <div class="info-card-value">${curSG ? curSG.toFixed(3) : 'N/A'}</div>
                     </div>
                     ${tFGSG !== null ? `
                     <div class="info-card" data-tooltip="Target final gravity set in your RAPT profile">
-                        <div class="info-card-label mb-1 text-xs">Target FG</div>
-                        <div class="info-card-value text-xl">${tFGSG.toFixed(3)}</div>
+                        <div class="info-card-label mb-1">Target FG</div>
+                        <div class="info-card-value">${tFGSG.toFixed(3)}</div>
                     </div>` : ''}
                     <div class="info-card" data-tooltip="Alcohol by volume, calculated from OG and current gravity">
-                        <div class="info-card-label mb-1 text-xs">ABV</div>
-                        <div class="info-card-value text-2xl">${latestData.abv?.toFixed(2) || 'N/A'}%</div>
+                        <div class="info-card-label mb-1">ABV</div>
+                        <div class="info-card-value">${latestData.abv?.toFixed(2) || 'N/A'}%</div>
                     </div>
-                    <div class="info-card" data-tooltip="How much of the available sugars have been consumed">
-                        <div class="info-card-label mb-1 text-xs">Attenuation</div>
-                        <div class="info-card-value text-2xl">${latestData.attenuation?.toFixed(1) || 'N/A'}%</div>
+                    <div class="info-card" data-tooltip="How much of the available sugar has been eaten">
+                        <div class="info-card-label mb-1">Attenuation</div>
+                        <div class="info-card-value">${latestData.attenuation?.toFixed(1) || 'N/A'}%</div>
                     </div>
+                    ${extraCards}
                 </div>
-
-                ${extraCards ? `<div class="flex flex-wrap justify-center gap-3 mb-6">${extraCards}</div>` : '<div class="mb-6"></div>'}
 
                 ${progressBar}
 
                 <div class="hidden md:block">
                     <div class="mb-4">
-                        <label for="timeRange-${device.id}" class="block text-sm font-medium time-range-label mb-2">Time Range:</label>
+                        <label for="timeRange-${device.id}" class="block time-range-label mb-1.5">Time range</label>
                         <select id="timeRange-${device.id}" class="time-range-select">
                             <option value="3">Last 3 Hours</option>
                             <option value="6" selected>Last 6 Hours</option>

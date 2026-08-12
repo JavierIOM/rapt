@@ -1,5 +1,38 @@
 # Changelog
 
+## [3.5.0] - 2026-08-12
+
+Full visual rewrite. Quieter, warmer, one coherent design language across both
+themes. No functional changes: every control, calculation and endpoint behaves
+exactly as before.
+
+### Added
+- `prefers-reduced-motion` support. Bubbles are not created at all when it is set, and every transition and animation collapses
+- Tabular figures on all readouts, so digits stop shifting on the 15 minute auto-refresh
+- Documented design rules at the top of `style.css`: one accent, one radius scale, no gradients, status colour is semantic only
+
+### Changed
+- Light mode is now the default on a first visit. A stored preference still wins
+- Single warm copper accent shared by both themes, replacing the old orange-in-light, purple-in-dark split
+- Warm neutral surfaces instead of blue-grey slate
+- Removed every gradient: fills, buttons, progress bar, and the gradient text on the site title and device names
+- Temperature tiles now use a quiet tint with a coloured value, instead of a saturated gradient block with white text
+- Alerts are calm tinted bands. The infinite pulse animation is gone
+- Cold crash active is a solid accent fill rather than a flashing red glow, and is now clearly distinct from the dark mode toggle
+- Background bubbles cut from 60 to 14, slower, no glow, no colour of their own
+- Chart restyled: muted per-series colours, thinner lines, points only where they carry meaning. The three right-hand axes dropped their rotated titles and colour their ticks to match their series instead
+- Stat tiles merged into one grid so the session stats line up with the main row instead of floating centred
+- One radius scale throughout, replacing four competing ones
+- Settings modal copy rewritten in plainer language
+- OG image redrawn in the new palette. Its gravity curve now falls, which is the direction gravity actually goes
+- Page header, footer and refresh button toned down
+
+### Fixed
+- Progress bar track was invisible: it referenced `var(--border)`, which was never defined
+- Status bar lost its padding and radius on error, because `showStatus()` overwrites `className` and the spacing lived in utility classes. Now styled in CSS
+- Device meta no longer collides with the device name on narrow screens
+- Em-dashes removed from the on-page alert and tooltip strings
+
 ## [3.4.3] - 2026-04-19
 
 ### Added

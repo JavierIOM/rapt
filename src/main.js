@@ -39,8 +39,12 @@ function resolveTempConfig() {
 // Theme management. Light is the default here (project-specific: this
 // dashboard is mostly read in daylight). A stored preference always wins.
 let darkMode = localStorage.getItem('darkMode') !== null ? localStorage.getItem('darkMode') === 'true' : false;
-let monochromeMode = localStorage.getItem('monochromeMode') === 'true';
 let coldCrashMode = localStorage.getItem('coldCrashMode') === 'true';
+
+// Monochrome mode was removed in v3.5.2. It never had a button, so it was only
+// reachable by hand-setting this key. Clear it so anyone who did set it is not
+// left stuck on a theme that no longer exists.
+localStorage.removeItem('monochromeMode');
 
 function applyTheme() {
     const body = document.body;
@@ -49,12 +53,6 @@ function applyTheme() {
         body.classList.add('dark-mode');
     } else {
         body.classList.remove('dark-mode');
-    }
-
-    if (monochromeMode) {
-        body.classList.add('monochrome-mode');
-    } else {
-        body.classList.remove('monochrome-mode');
     }
 
     // Update button states and text
@@ -87,12 +85,6 @@ function applyTheme() {
 function toggleDarkMode() {
     darkMode = !darkMode;
     localStorage.setItem('darkMode', darkMode);
-    applyTheme();
-}
-
-function toggleMonochromeMode() {
-    monochromeMode = !monochromeMode;
-    localStorage.setItem('monochromeMode', monochromeMode);
     applyTheme();
 }
 
@@ -226,17 +218,6 @@ function formatTime(timestamp) {
 
 // Chart colours for the current theme. Mirrors the tokens in style.css.
 function palette() {
-    if (monochromeMode) {
-        return darkMode ? {
-            text: '#EDEDEC', muted: '#A6A6A3', grid: 'rgba(255,255,255,0.06)',
-            good: '#A8A8A5', warning: '#C9C9C6', danger: '#EDEDEC',
-            temp: '#787875', abv: '#9A9A97', attenuation: '#C9C9C6', velocity: '#6A6A67'
-        } : {
-            text: '#1F1F1E', muted: '#575756', grid: 'rgba(0,0,0,0.06)',
-            good: '#4A4A48', warning: '#6E6E6B', danger: '#1F1F1E',
-            temp: '#82827F', abv: '#5E5E5B', attenuation: '#33332F', velocity: '#9C9C99'
-        };
-    }
     return darkMode ? {
         text: '#EDEAE5', muted: '#A8A29A', grid: 'rgba(255,255,255,0.06)',
         good: '#7FA87A', warning: '#D0A25E', danger: '#D98078',

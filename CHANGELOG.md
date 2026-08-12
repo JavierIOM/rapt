@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.5.2] - 2026-08-12
+
+### Removed
+- Monochrome mode. It never had a button, so it was only reachable by hand-setting the `monochromeMode` localStorage key, and nothing in the UI exposed it. Gone from `main.js`, the Chart.js palette and the two CSS token blocks
+- A stale `monochromeMode` key is cleared on load, so anyone who had set it by hand is not left on a theme that no longer exists
+
 ## [3.5.1] - 2026-08-12
 
 ### Fixed

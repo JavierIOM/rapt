@@ -3,26 +3,38 @@ import Chart from 'chart.js/auto'
 
 let charts = {};
 
-// Temperature limits (will be loaded from localStorage or API config)
-function loadTempConfig() {
+// Temperature limits come from three places, in priority order:
+//   1. tempOverride       what the user saved in the settings modal
+//   2. serverTempConfig   the Netlify env vars, returned by /hydrometers
+//   3. FALLBACK           hardcoded, only used before the first fetch lands
+// Precedence matters: the API response used to overwrite the user's saved
+// values on every load, which made the settings modal write-only.
+const FALLBACK_TEMP_CONFIG = {
+    tempDangerMin: 18,
+    tempWarningMin: 20,
+    tempWarningMax: 26,
+    tempDangerMax: 28
+};
+
+function loadTempOverride() {
     const saved = localStorage.getItem('tempConfig');
-    if (saved) {
-        try {
-            return JSON.parse(saved);
-        } catch (e) {
-            console.warn('Corrupt tempConfig in localStorage, resetting to defaults.');
-            localStorage.removeItem('tempConfig');
-        }
+    if (!saved) return null;
+    try {
+        return JSON.parse(saved);
+    } catch (e) {
+        console.warn('Corrupt tempConfig in localStorage, ignoring it.');
+        localStorage.removeItem('tempConfig');
+        return null;
     }
-    return {
-        tempDangerMin: 18,
-        tempWarningMin: 20,
-        tempWarningMax: 26,
-        tempDangerMax: 28
-    };
 }
 
-let tempConfig = loadTempConfig();
+let tempOverride = loadTempOverride();
+let serverTempConfig = null;
+let tempConfig = tempOverride || FALLBACK_TEMP_CONFIG;
+
+function resolveTempConfig() {
+    tempConfig = tempOverride || serverTempConfig || FALLBACK_TEMP_CONFIG;
+}
 
 // Theme management. Light is the default here (project-specific: this
 // dashboard is mostly read in daylight). A stored preference always wins.
@@ -189,9 +201,11 @@ async function fetchHydrometers() {
             throw new Error(data.error);
         }
 
-        // Update temperature config if provided
+        // Server thresholds are the default, not the winner. A saved user
+        // override takes precedence over them.
         if (data.config) {
-            tempConfig = data.config;
+            serverTempConfig = data.config;
+            resolveTempConfig();
         }
 
         // Hide status after successful load
@@ -705,13 +719,15 @@ const closeBtn = document.getElementById('closeModal');
 const saveBtn = document.getElementById('saveSettings');
 const resetBtn = document.getElementById('resetSettings');
 
-function openSettings() {
-    // Load current values into inputs
+function fillSettingsInputs() {
     document.getElementById('tempDangerMin').value = tempConfig.tempDangerMin;
     document.getElementById('tempWarningMin').value = tempConfig.tempWarningMin;
     document.getElementById('tempWarningMax').value = tempConfig.tempWarningMax;
     document.getElementById('tempDangerMax').value = tempConfig.tempDangerMax;
+}
 
+function openSettings() {
+    fillSettingsInputs();
     modal.classList.add('active');
 }
 
@@ -719,33 +735,38 @@ function closeSettings() {
     modal.classList.remove('active');
 }
 
+// parseFloat(x) || fallback threw away a legitimate 0, which matters when
+// you are cold crashing near freezing. Only fall back on an unparseable value.
+function readTempInput(id, fallback) {
+    const value = parseFloat(document.getElementById(id).value);
+    return Number.isFinite(value) ? value : fallback;
+}
+
 function saveSettings() {
-    const newConfig = {
-        tempDangerMin: parseFloat(document.getElementById('tempDangerMin').value) || 18,
-        tempWarningMin: parseFloat(document.getElementById('tempWarningMin').value) || 20,
-        tempWarningMax: parseFloat(document.getElementById('tempWarningMax').value) || 26,
-        tempDangerMax: parseFloat(document.getElementById('tempDangerMax').value) || 28
+    const base = serverTempConfig || FALLBACK_TEMP_CONFIG;
+
+    tempOverride = {
+        tempDangerMin: readTempInput('tempDangerMin', base.tempDangerMin),
+        tempWarningMin: readTempInput('tempWarningMin', base.tempWarningMin),
+        tempWarningMax: readTempInput('tempWarningMax', base.tempWarningMax),
+        tempDangerMax: readTempInput('tempDangerMax', base.tempDangerMax)
     };
 
-    tempConfig = newConfig;
-    localStorage.setItem('tempConfig', JSON.stringify(newConfig));
+    localStorage.setItem('tempConfig', JSON.stringify(tempOverride));
+    resolveTempConfig();
 
     closeSettings();
     loadData(); // Reload to apply new settings
 }
 
+// Drops the local override so the server thresholds take over again.
 function resetSettings() {
-    const defaults = {
-        tempDangerMin: 18,
-        tempWarningMin: 20,
-        tempWarningMax: 26,
-        tempDangerMax: 28
-    };
+    tempOverride = null;
+    localStorage.removeItem('tempConfig');
+    resolveTempConfig();
 
-    document.getElementById('tempDangerMin').value = defaults.tempDangerMin;
-    document.getElementById('tempWarningMin').value = defaults.tempWarningMin;
-    document.getElementById('tempWarningMax').value = defaults.tempWarningMax;
-    document.getElementById('tempDangerMax').value = defaults.tempDangerMax;
+    fillSettingsInputs();
+    loadData();
 }
 
 settingsBtn.addEventListener('click', openSettings);

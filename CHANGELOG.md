@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.5.1] - 2026-08-12
+
+### Fixed
+- Temperature settings did not stick. `fetchHydrometers()` overwrote `tempConfig` with the server's env-var config on every load, and `saveSettings()` triggers a load straight after saving, so your values were wiped a beat after you saved them. The 15 minute auto-refresh did the same. Server thresholds are now the default and a saved override wins
+- A threshold of `0` could not be saved. `parseFloat(x) || 18` treated it as missing. Now only an unparseable value falls back, which matters when cold crashing near freezing
+- "Reset to defaults" did nothing on its own. It filled the inputs with hardcoded numbers without clearing the saved override, so closing the modal kept the old values. It now drops the override and falls back to the server thresholds
+
+### Changed
+- Settings precedence is explicit and documented: saved override, then server env vars, then a hardcoded fallback used only before the first fetch lands
+
 ## [3.5.0] - 2026-08-12
 
 Full visual rewrite. Quieter, warmer, one coherent design language across both

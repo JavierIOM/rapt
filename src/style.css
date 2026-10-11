@@ -347,11 +347,6 @@ body {
   margin: 0 0.35rem;
 }
 
-.firmware-update {
-  color: var(--accent-text);
-  font-weight: 500;
-}
-
 /* ── Fermentation progress ───────────────────────────────────────────────── */
 
 .ferment-progress-wrap {

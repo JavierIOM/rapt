@@ -597,7 +597,6 @@ function displayDevices(hydrometers) {
                     <h2 class="device-name text-lg">${displayName}</h2>
                     <div class="device-meta text-xs mt-0.5">
                         Firmware ${displayFirmware}
-                        ${device.isLatestFirmware === false ? '<span class="firmware-update">update available</span>' : ''}
                         ${displayProfile ? `<span class="device-meta-sep">/</span> ${displayProfile}` : ''}
                     </div>
                 </div>

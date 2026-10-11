@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.5.3] - 2026-10-11
+
+### Removed
+- The "update available" badge next to the firmware version. It came straight from RAPT's `isLatestFirmware` flag, which reports `false` for a Pill on 1.5.0 while the RAPT app says it is current, and does the same for the BrewZilla. The firmware version still shows
+
 ## [3.5.2] - 2026-08-12
 
 ### Removed

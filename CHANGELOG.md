@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.5.4] - 2026-10-11
+
+### Added
+- A 60 second in-memory cache in front of RAPT. RAPT now allows only 5 calls a minute per endpoint, so refresh-hammering and the desk display no longer spend that between them
+- If RAPT refuses or falls over, the last good data (up to 30 minutes old) is served instead of an error, and the page says "RAPT is busy, showing data from..." rather than going blank
+- `sessionStartDate` is now filled from the gravity jump that marks pitching, so "Day N" shows on the dashboard and the desk display without a RAPT profile session. RAPT stopped sending `activeProfileSession` with its October update
+
+### Fixed
+- OG would have started sliding a week after pitching. Telemetry was fetched for 7 days, so the gravity jump that marks the brew start fell out of the window and the oldest reading became the OG: on 17 Oct this brew would have shown 1.023 and 1.29% ABV instead of 1.042 and 3.7%. The search window is now 30 days. Only the last 7 days of the session are sent to the browser, so the payload stays the size the desk display expects
+- A rate-limited RAPT request came back as a 500 with RAPT's raw error. It is now a 429 with `Retry-After` and a readable message
+- A failed load wiped the device cards and showed "No devices found". The cards from the last good load now stay put
+- Status messages never reappeared after the first successful load, so later errors were invisible
+
+### Removed
+- The no-date telemetry fallback. RAPT now rejects telemetry requests without a date range, so it could only spend a second call against the rate limit and then return nothing
+- `fetchProfileSession()`, which was never called
+
 ## [3.5.3] - 2026-10-11
 
 ### Removed

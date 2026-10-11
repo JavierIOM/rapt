@@ -174,23 +174,20 @@ function showStatus(message, type = 'loading') {
     const statusEl = document.getElementById('status');
     statusEl.textContent = message;
     statusEl.className = `status ${type}`;
+    statusEl.style.display = '';
 }
 
-// Fetch hydrometers data from our API
+// Fetch hydrometers data from our API. Returns null on failure so the
+// caller can keep the cards it already has instead of blanking them.
 async function fetchHydrometers() {
     showStatus('Fetching device data...', 'loading');
 
     try {
         const response = await fetch('/.netlify/functions/hydrometers');
+        const data = await response.json().catch(() => ({}));
 
-        if (!response.ok) {
-            throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        if (data.error) {
-            throw new Error(data.error);
+        if (!response.ok || data.error) {
+            throw new Error(data.error || `API request failed: ${response.status} ${response.statusText}`);
         }
 
         // Server thresholds are the default, not the winner. A saved user
@@ -200,13 +197,17 @@ async function fetchHydrometers() {
             resolveTempConfig();
         }
 
-        // Hide status after successful load
-        document.getElementById('status').style.display = 'none';
+        // The server falls back to its last good copy when RAPT says no
+        if (data.stale) {
+            showStatus(`RAPT is busy, showing data from ${formatTime(data.fetchedAt)}`, 'loading');
+        } else {
+            document.getElementById('status').style.display = 'none';
+        }
         return data.devices || data;
     } catch (error) {
         showStatus(`Error fetching data: ${error.message}`, 'error');
         console.error('Fetch error:', error);
-        return [];
+        return null;
     }
 }
 
@@ -680,7 +681,7 @@ async function loadData() {
     refreshBtn.disabled = true;
 
     const hydrometers = await fetchHydrometers();
-    displayDevices(hydrometers);
+    if (hydrometers) displayDevices(hydrometers);
 
     refreshBtn.disabled = false;
 }

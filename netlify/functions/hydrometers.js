@@ -17,8 +17,21 @@ const CONFIG = {
     debug: process.env.DEBUG === 'true'
 };
 
+// RAPT allows 5 calls a minute per endpoint per account (undocumented, found 11 Oct 2026).
+// A short in-memory cache stops refresh-hammering and the desk display from spending it,
+// and the last good response is served stale if RAPT refuses or falls over.
+const CACHE_FRESH_MS = 60 * 1000;
+const CACHE_STALE_MAX_MS = 30 * 60 * 1000;
+
+// Telemetry is fetched over a wide window so the gravity jump that marks pitching stays
+// visible for a whole ferment. Only the last week of the session goes to the client,
+// which keeps the payload the size the desk display was built for.
+const SESSION_SEARCH_DAYS = 30;
+const TELEMETRY_RETURN_DAYS = 7;
+
 let accessToken = null;
 let tokenExpiry = null;
+let cache = null; // { at, devices }
 
 // Helper function to make HTTPS requests
 function makeRequest(url, options = {}) {
@@ -42,7 +55,10 @@ function makeRequest(url, options = {}) {
                         resolve(data);
                     }
                 } else {
-                    reject(new Error(`HTTP ${res.statusCode}: ${data}`));
+                    const err = new Error(`HTTP ${res.statusCode}: ${data}`);
+                    err.statusCode = res.statusCode;
+                    err.retryAfter = parseInt(res.headers['retry-after'], 10) || null;
+                    reject(err);
                 }
             });
         });
@@ -101,9 +117,10 @@ async function fetchTelemetry(hydrometerId) {
 
     console.log(`📈 Fetching telemetry for hydrometer ${hydrometerId}...`);
 
-    // Fetch last 7 days of data to support all time ranges in the UI
+    // RAPT now rejects a telemetry request without a start and end date, so there is no
+    // fallback to try. A rate limit is rethrown so the handler can serve the cache.
     const endDate = new Date();
-    const startDate = new Date(endDate.getTime() - (7 * 24 * 60 * 60 * 1000));
+    const startDate = new Date(endDate.getTime() - (SESSION_SEARCH_DAYS * 24 * 60 * 60 * 1000));
 
     try {
         const url = `${CONFIG.apiUrl}/Hydrometers/GetTelemetry?hydrometerId=${hydrometerId}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`;
@@ -126,91 +143,29 @@ async function fetchTelemetry(hydrometerId) {
 
         return data;
     } catch (error) {
-        console.log(`⚠️  Telemetry endpoint failed, trying alternative...`);
-
-        try {
-            const url2 = `${CONFIG.apiUrl}/Hydrometers/GetTelemetry?hydrometerId=${hydrometerId}`;
-            const data2 = await makeRequest(url2, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Accept': 'application/json'
-                }
-            });
-            console.log(`✅ Fetched ${data2.length || 0} telemetry points (alternative endpoint)`);
-            return data2;
-        } catch (error2) {
-            console.error(`❌ Both telemetry endpoints failed`);
-            return [];
-        }
-    }
-}
-
-// Fetch profile session details
-async function fetchProfileSession(sessionId) {
-    if (!isTokenValid()) {
-        await authenticate();
-    }
-
-    try {
-        const url = `${CONFIG.apiUrl}/Profiles/GetProfiles`;
-        const data = await makeRequest(url, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Accept': 'application/json'
-            }
-        });
-
-        // Log profile data to see all available fields (debug mode only)
-        if (CONFIG.debug && data && data.length > 0) {
-            console.log('📊 Sample profile data (first profile):');
-            console.log(JSON.stringify(data[0], null, 2));
-        }
-
-        for (let profile of data) {
-            if (profile.sessions) {
-                const session = profile.sessions.find(s => s.id === sessionId);
-                if (session) {
-                    if (CONFIG.debug) {
-                        console.log('📊 Found profile session:');
-                        console.log(JSON.stringify(session, null, 2));
-                    }
-                    // Log profile/session keys always so we can identify the name field
-                    console.log(`   Profile keys: ${Object.keys(profile).join(', ')}`);
-                    console.log(`   Session keys: ${Object.keys(session).join(', ')}`);
-                    console.log(`   Profile name candidates: name=${profile.name} title=${profile.title} profileName=${profile.profileName}`);
-                    console.log(`   Session name candidates: name=${session.name} title=${session.title} label=${session.label}`);
-                    // Attach the profile name so the frontend can display it
-                    session._profileName = profile.name || profile.title || profile.profileName || session.name || session.title || session.label || null;
-                    return session;
-                }
-            }
-        }
-        return null;
-    } catch (error) {
-        console.error(`❌ Failed to fetch profile session:`, error.message);
-        return null;
+        if (error.statusCode === 429) throw error;
+        console.error(`❌ Telemetry request failed:`, error.message);
+        return [];
     }
 }
 
 // Detect the start of the current brew session from telemetry.
 // A new brew is indicated by a significant gravity increase (pill removed, cleaned, repitched).
-// Returns the index in the sorted-ascending array where the current session begins.
+// Returns the date of the last such jump, or null if there is none in the window.
 function findCurrentSessionStart(telemetry) {
     const sorted = [...telemetry].sort((a, b) => new Date(a.createdOn) - new Date(b.createdOn));
     const GRAVITY_JUMP_THRESHOLD = 8; // points (e.g. 1.010 -> 1.060 = 50pt jump)
-    let sessionStartIndex = 0;
+    let sessionStart = null;
 
     for (let i = 1; i < sorted.length; i++) {
         const prev = sorted[i - 1].gravity;
         const curr = sorted[i].gravity;
         if (curr - prev >= GRAVITY_JUMP_THRESHOLD) {
-            sessionStartIndex = i;
+            sessionStart = sorted[i].createdOn;
         }
     }
 
-    return new Date(sorted[sessionStartIndex].createdOn);
+    return sessionStart ? new Date(sessionStart) : null;
 }
 
 // Fetch hydrometers data
@@ -287,11 +242,20 @@ async function fetchHydrometers() {
 
                 // Filter telemetry to current brew session only.
                 // Priority: profile session start date -> gravity-jump detection.
-                const cutoff = sessionStartDate || findCurrentSessionStart(telemetry);
-                console.log(`   Filtering telemetry to current session (cutoff: ${cutoff.toISOString()})`);
-                const sessionTelemetry = telemetry.filter(t => new Date(t.createdOn) >= cutoff);
-                console.log(`   Telemetry after session filter: ${sessionTelemetry.length} of ${telemetry.length} readings`);
-                telemetry = sessionTelemetry.length > 0 ? sessionTelemetry : telemetry;
+                // RAPT stopped sending activeProfileSession in Oct 2026, so in practice the
+                // jump is all there is, and it doubles as the session start for "Day N".
+                if (!sessionStartDate) {
+                    sessionStartDate = findCurrentSessionStart(telemetry);
+                    if (sessionStartDate) {
+                        device.sessionStartDate = sessionStartDate.toISOString();
+                        console.log(`   Session start detected from gravity jump: ${device.sessionStartDate}`);
+                    }
+                }
+                if (sessionStartDate) {
+                    const sessionTelemetry = telemetry.filter(t => new Date(t.createdOn) >= sessionStartDate);
+                    console.log(`   Telemetry after session filter: ${sessionTelemetry.length} of ${telemetry.length} readings`);
+                    telemetry = sessionTelemetry.length > 0 ? sessionTelemetry : telemetry;
+                }
 
                 if (!og && CONFIG.manualOriginalGravity) {
                     og = CONFIG.manualOriginalGravity;
@@ -308,6 +272,10 @@ async function fetchHydrometers() {
 
                 // Expose OG on device for frontend calculations
                 device.og = og;
+
+                // OG is settled, so the client only needs the last week of the session
+                const returnFrom = Date.now() - (TELEMETRY_RETURN_DAYS * 24 * 60 * 60 * 1000);
+                telemetry = telemetry.filter(t => new Date(t.createdOn).getTime() >= returnFrom);
 
                 device.telemetry = telemetry.map((t, idx) => {
                     // Convert gravity values - RAPT appears to use format like 1063.4 for SG 1.0634
@@ -382,22 +350,47 @@ exports.handler = async (event, context) => {
         };
     }
 
+    const respond = (devices, fetchedAt, stale) => ({
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+            devices,
+            config: {
+                tempDangerMin: CONFIG.tempDangerMin,
+                tempWarningMin: CONFIG.tempWarningMin,
+                tempWarningMax: CONFIG.tempWarningMax,
+                tempDangerMax: CONFIG.tempDangerMax
+            },
+            fetchedAt: new Date(fetchedAt).toISOString(),
+            stale
+        })
+    });
+
+    if (cache && Date.now() - cache.at < CACHE_FRESH_MS) {
+        console.log('📦 Serving cached response');
+        return respond(cache.devices, cache.at, false);
+    }
+
     try {
         const data = await fetchHydrometers();
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({
-                devices: data,
-                config: {
-                    tempDangerMin: CONFIG.tempDangerMin,
-                    tempWarningMin: CONFIG.tempWarningMin,
-                    tempWarningMax: CONFIG.tempWarningMax,
-                    tempDangerMax: CONFIG.tempDangerMax
-                }
-            })
-        };
+        cache = { at: Date.now(), devices: data };
+        return respond(data, cache.at, false);
     } catch (error) {
+        if (cache && Date.now() - cache.at < CACHE_STALE_MAX_MS) {
+            console.warn(`⚠️  Upstream failed (${error.message}), serving stale data`);
+            return respond(cache.devices, cache.at, true);
+        }
+        if (error.statusCode === 429) {
+            const retryAfter = error.retryAfter || 60;
+            return {
+                statusCode: 429,
+                headers: { ...headers, 'Retry-After': String(retryAfter) },
+                body: JSON.stringify({
+                    error: `RAPT is rate limiting requests, try again in ${retryAfter} seconds`,
+                    retryAfter
+                })
+            };
+        }
         return {
             statusCode: 500,
             headers,
